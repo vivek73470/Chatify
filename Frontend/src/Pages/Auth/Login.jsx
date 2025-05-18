@@ -64,7 +64,7 @@ const Login = ({ open, onClose }) => {
         sx: {
           borderRadius: 2,
           width: '100%',
-          maxWidth: { xs: '90%', sm: 400 }
+          maxWidth: { xs: '90%', sm: 450 }
         }
       }}
     >

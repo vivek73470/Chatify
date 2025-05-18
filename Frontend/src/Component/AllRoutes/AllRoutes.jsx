@@ -1,6 +1,6 @@
 import React from 'react'
 import { Routes,Route } from 'react-router-dom'
-import Register from '../../Pages/Auth/UserRegister'
+import Register from '../../Pages/Auth/Register'
 
 function AllRoutes() {
     return (

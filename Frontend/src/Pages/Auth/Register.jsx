@@ -16,13 +16,13 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, Phone, Person, Lock } from '@mui/icons-material';
 import Login from './Login';
+import notify from '../../Utils/toastNotification';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
   const [openLoginDialog, setOpenLoginDialog] = useState(false);
-  
+
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
@@ -48,11 +48,11 @@ const Register = () => {
       setLoading(true);
       // Here you would make your API call to register the user
       console.log('Registration data:', data);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setOpenSnackbar(true);
+
+      notify.success('Registration Successfully')
       // Reset form or redirect after successful registration
     } catch (error) {
       console.error('Registration failed:', error);
@@ -63,26 +63,26 @@ const Register = () => {
 
   return (
     <Container maxWidth="sm">
-      <Paper 
-        elevation={8} 
-        sx={{ 
-          p: 4, 
-          mt: 8, 
+      <Paper
+        elevation={8}
+        sx={{
+          p: 4,
+          mt: 8,
           borderRadius: 2,
           background: 'linear-gradient(145deg, #f0f0f0 0%, #ffffff 100%)',
         }}
       >
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             mb: 3
           }}
         >
-          <Avatar 
-            sx={{ 
-              m: 1, 
+          <Avatar
+            sx={{
+              m: 1,
               bgcolor: 'primary.main',
               width: 60,
               height: 60
@@ -100,15 +100,15 @@ const Register = () => {
 
         <Divider sx={{ mb: 3 }} />
 
-        <Box 
-          component="form" 
+        <Box
+          component="form"
           onSubmit={handleSubmit(onSubmit)}
           sx={{ mt: 1 }}
         >
           <Controller
             name="name"
             control={control}
-            rules={{ 
+            rules={{
               required: 'Name is required',
               minLength: { value: 2, message: 'Name must be at least 2 characters' }
             }}
@@ -137,7 +137,7 @@ const Register = () => {
           <Controller
             name="number"
             control={control}
-            rules={{ 
+            rules={{
               required: 'Phone number is required',
               pattern: {
                 value: /^[0-9]{10}$/,
@@ -168,7 +168,7 @@ const Register = () => {
           <Controller
             name="password"
             control={control}
-            rules={{ 
+            rules={{
               required: 'Password is required',
               minLength: { value: 8, message: 'Password must be at least 8 characters' }
             }}
@@ -211,9 +211,9 @@ const Register = () => {
             variant="contained"
             size="large"
             disabled={loading}
-            sx={{ 
-              mt: 2, 
-              mb: 2, 
+            sx={{
+              mt: 2,
+              mb: 2,
               py: 1.5,
               borderRadius: 2,
               fontWeight: 'bold',
@@ -227,15 +227,15 @@ const Register = () => {
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
-          
+
           <Box sx={{ mt: 2, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               Already have an account?{' '}
-              <Typography 
-                component="span" 
-                color="primary" 
-                sx={{ 
-                  fontWeight: 'bold', 
+              <Typography
+                component="span"
+                color="primary"
+                sx={{
+                  fontWeight: 'bold',
                   cursor: 'pointer',
                   '&:hover': {
                     textDecoration: 'underline'
@@ -249,21 +249,6 @@ const Register = () => {
           </Box>
         </Box>
       </Paper>
-
-      <Snackbar 
-        open={openSnackbar} 
-        autoHideDuration={6000} 
-        onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={() => setOpenSnackbar(false)} 
-          severity="success" 
-          sx={{ width: '100%' }}
-        >
-          Registration successful!
-        </Alert>
-      </Snackbar>
 
       {/* Login Dialog */}
       <Login open={openLoginDialog} onClose={handleCloseLoginDialog} />
