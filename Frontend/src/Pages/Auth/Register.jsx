@@ -11,22 +11,24 @@ import {
   IconButton,
   Avatar,
   Divider,
-  Snackbar,
-  Alert
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  CircularProgress
 } from '@mui/material';
 import { Visibility, VisibilityOff, Phone, Person, Lock } from '@mui/icons-material';
-import Login from './Login';
 import notify from '../../Utils/toastNotification';
+import CloseIcon from '@mui/icons-material/Close';
 import { useRegisterApiMutation } from '../../services/loginService';
 
-const Register = () => {
+const Register = ({ open, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [openLoginDialog, setOpenLoginDialog] = useState(false);
 
-  const [registerUser, { isLoading, error }] = useRegisterApiMutation()
+  const [registerUser] = useRegisterApiMutation();
 
-  const { control, handleSubmit, formState: { errors } } = useForm({
+  const { control, handleSubmit, formState: { errors }, reset } = useForm({
     defaultValues: {
       name: '',
       number: '',
@@ -38,19 +40,13 @@ const Register = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleOpenLoginDialog = () => {
-    setOpenLoginDialog(true);
-  };
-
-  const handleCloseLoginDialog = () => {
-    setOpenLoginDialog(false);
-  };
-
   const onSubmit = async (data) => {
     try {
       setLoading(true);
       const response = await registerUser(data).unwrap();
       if (response?.status) {
+        reset();
+        onClose();
         notify.success(response?.message);
       }
     } catch (error) {
@@ -60,24 +56,41 @@ const Register = () => {
     }
   };
 
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
   return (
-    <Container maxWidth="sm">
-      <Paper
-        elevation={8}
-        sx={{
-          p: 4,
-          mt: 8,
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
           borderRadius: 2,
-          background: 'linear-gradient(145deg, #f0f0f0 0%, #ffffff 100%)',
-        }}
-      >
+          width: '100%',
+          maxWidth: { xs: '90%', sm: 500 }
+        }
+      }}
+    >
+      <DialogTitle>
+        <IconButton
+          aria-label="close"
+          onClick={handleClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
         <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            mb: 3
+            mb: 2
           }}
         >
           <Avatar
@@ -97,9 +110,11 @@ const Register = () => {
             Connect with friends and the world around you
           </Typography>
         </Box>
+      </DialogTitle>
 
-        <Divider sx={{ mb: 3 }} />
+      <Divider />
 
+      <DialogContent>
         <Box
           component="form"
           onSubmit={handleSubmit(onSubmit)}
@@ -204,55 +219,55 @@ const Register = () => {
               />
             )}
           />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size="large"
-            disabled={loading}
-            sx={{
-              mt: 2,
-              mb: 2,
-              py: 1.5,
-              borderRadius: 2,
-              fontWeight: 'bold',
-              textTransform: 'none',
-              fontSize: '1rem',
-              boxShadow: '0 4px 10px rgba(25, 118, 210, 0.3)',
-              '&:hover': {
-                boxShadow: '0 6px 15px rgba(25, 118, 210, 0.4)',
-              }
-            }}
-          >
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </Button>
-
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Already have an account?{' '}
-              <Typography
-                component="span"
-                color="primary"
-                sx={{
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    textDecoration: 'underline'
-                  }
-                }}
-                onClick={handleOpenLoginDialog}
-              >
-                Login now
-              </Typography>
-            </Typography>
-          </Box>
         </Box>
-      </Paper>
+      </DialogContent>
 
-      {/* Login Dialog */}
-      <Login open={openLoginDialog} onClose={handleCloseLoginDialog} />
-    </Container>
+      <DialogActions sx={{ px: 3, pb: 3, flexDirection: 'column' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleSubmit(onSubmit)}
+          disabled={loading}
+          sx={{
+            py: 1.5,
+            borderRadius: 2,
+            fontWeight: 'bold',
+            textTransform: 'none',
+            fontSize: '1rem',
+            boxShadow: '0 4px 10px rgba(25, 118, 210, 0.3)',
+            '&:hover': {
+              boxShadow: '0 6px 15px rgba(25, 118, 210, 0.4)',
+            }
+          }}
+        >
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            'Create Account'
+          )}
+        </Button>
+
+        <Box sx={{ mt: 2, width: '100%', textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            Already have an account?{' '}
+            <Typography
+              component="span"
+              color="primary"
+              sx={{
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                '&:hover': {
+                  textDecoration: 'underline'
+                }
+              }}
+              onClick={handleClose}
+            >
+              Login now
+            </Typography>
+          </Typography>
+        </Box>
+      </DialogActions>
+    </Dialog>
   );
 };
 
