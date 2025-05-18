@@ -17,11 +17,14 @@ import {
 import { Visibility, VisibilityOff, Phone, Person, Lock } from '@mui/icons-material';
 import Login from './Login';
 import notify from '../../Utils/toastNotification';
+import { useRegisterApiMutation } from '../../services/loginService';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [openLoginDialog, setOpenLoginDialog] = useState(false);
+
+  const [registerUser, { isLoading, error }] = useRegisterApiMutation()
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
@@ -46,20 +49,17 @@ const Register = () => {
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      // Here you would make your API call to register the user
-      console.log('Registration data:', data);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      notify.success('Registration Successfully')
-      // Reset form or redirect after successful registration
+      const response = await registerUser(data).unwrap();
+      if (response?.status) {
+        notify.success(response?.message);
+      }
     } catch (error) {
-      console.error('Registration failed:', error);
+      notify.error(error?.data?.message || 'Something went wrong!');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <Container maxWidth="sm">
