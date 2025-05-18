@@ -1,0 +1,17 @@
+const mongoose = require('mongoose');
+
+const userModel = new mongoose.Schema({
+    name: { type: String, required: true },
+    number: { type: String, required: true },
+    password: { type: String, required: true },
+    profilepic: { type: String, default: null },
+    lastSeen: { type: Date, default: Date.now },
+    status: {
+        type: String,
+        default: 'Hey there! I am using Chatify.',
+    },
+}, { timestamps: true }, { versionKey: false });
+
+const User = mongoose.model("user",userModel)
+
+module.exports = User;
