@@ -16,11 +16,13 @@ import { Visibility, VisibilityOff, Phone, Lock } from '@mui/icons-material';
 import { useLoginApiMutation } from '../../services/loginService';
 import Register from './Register';
 import notify from '../../Utils/toastNotification';
+import ForgotPassword from './ForgotPassword';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
+  const [openForgotDialog, setOpenForgotDialog] = useState(false);
 
   const [loginUser] = useLoginApiMutation();
 
@@ -41,6 +43,15 @@ const Login = () => {
 
   const handleCloseRegisterDialog = () => {
     setOpenRegisterDialog(false);
+  };
+
+
+  const handleOpenForgotDialog = () => {
+    setOpenForgotDialog(true);
+  };
+
+  const handleCloseForgotDialog = () => {
+    setOpenForgotDialog(false);
   };
 
   const onSubmit = async (data) => {
@@ -183,6 +194,7 @@ const Login = () => {
                   textDecoration: 'underline'
                 }
               }}
+              onClick={handleOpenForgotDialog}
             >
               Forgot Password?
             </Typography>
@@ -235,6 +247,9 @@ const Login = () => {
 
       {/* Register Dialog */}
       <Register open={openRegisterDialog} onClose={handleCloseRegisterDialog} />
+
+      {/* Forgot Dialog */}
+      <ForgotPassword open={openForgotDialog} onClose={handleCloseForgotDialog} />
     </Container>
   );
 };

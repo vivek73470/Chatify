@@ -29,10 +29,32 @@ export const AuthApi = createApi({
                 },
             }),
         }),
+        verifyNumber: builder.mutation({
+            query: (number) => ({
+                url: endpoints.verifyNumber,
+                method: 'POST',
+                body: number,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }),
+        }),
+        resetPassword: builder.mutation({
+            query: (_id, password) => ({
+                url: `${endpoints.resetPassword}/${_id}`,
+                method: 'PUT',
+                body: password,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }),
+        }),
     })
 })
 
 export const {
     useRegisterApiMutation,
     useLoginApiMutation,
+    useVerifyNumberMutation,
+    useResetPasswordMutation
 } = AuthApi
