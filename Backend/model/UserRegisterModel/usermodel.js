@@ -10,8 +10,8 @@ const userModel = new mongoose.Schema({
         type: String,
         default: 'Hey there! I am using Chatify.',
     },
-}, { timestamps: true }, { versionKey: false });
+}, { timestamps: true, versionKey: false });
 
-const User = mongoose.model("userRegister",userModel)
+const User = mongoose.model("userRegister", userModel)
 
 module.exports = User;
