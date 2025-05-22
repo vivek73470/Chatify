@@ -70,7 +70,15 @@ const ForgotPassword = ({ open, onClose }) => {
 
     return (
         <>
-            <Dialog open={open} onClose={handleClose}>
+            <Dialog open={open} onClose={handleClose}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        width: '100%',
+                        maxWidth: { xs: '90%', sm: 500 }
+                    }
+                }}
+            >
                 <DialogTitle sx={{ position: 'relative', p: 4 }}>
                     <IconButton
                         onClick={handleClose}

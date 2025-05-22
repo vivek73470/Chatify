@@ -40,10 +40,10 @@ export const AuthApi = createApi({
             }),
         }),
         resetPassword: builder.mutation({
-            query: (_id, password) => ({
+            query: ({_id, password}) => ({
                 url: `${endpoints.resetPassword}/${_id}`,
                 method: 'PUT',
-                body: password,
+                body: { password },
                 headers: {
                     'Content-Type': 'application/json',
                 },

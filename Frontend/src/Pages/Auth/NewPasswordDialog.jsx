@@ -20,9 +20,11 @@ const NewPasswordDialog = ({ open, onClose, id }) => {
 
     const [resetPassword] = useResetPasswordMutation();
     const onSubmit = async (data) => {
+        console.log(data,id,'npp')
         setLoading(true);
         try {
-            await resetPassword({ _id: id,password:data.password });
+           const res = await resetPassword({ _id: id, password: data.newPassword }).unwrap();
+              console.log(res,'ress')
             notify.success('Password reset successfully!');
             onClose();
         } catch (err) {
@@ -33,7 +35,15 @@ const NewPasswordDialog = ({ open, onClose, id }) => {
     };
 
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={onClose}
+            PaperProps={{
+                sx: {
+                    borderRadius: 2,
+                    width: '100%',
+                    maxWidth: { xs: '90%', sm: 500 }
+                }
+            }}
+        >
             <DialogTitle>Set New Password</DialogTitle>
             <DialogContent>
                 <form onSubmit={handleSubmit(onSubmit)}>

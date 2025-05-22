@@ -74,7 +74,6 @@ const Login = () => {
         elevation={8}
         sx={{
           p: 4,
-          mt: 8,
           borderRadius: 2,
           background: 'linear-gradient(145deg, #f0f0f0 0%, #ffffff 100%)',
         }}
