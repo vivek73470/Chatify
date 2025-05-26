@@ -3,10 +3,21 @@ import { endpoints } from "../Component/Endpoints/endpoints";
 
 const BASE_URL = import.meta.env.VITE_SERVER_URL;
 
+const baseQuery = fetchBaseQuery({
+    baseUrl: BASE_URL,
+    prepareHeaders: (headers) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            headers.set('Authorization', `Bearer ${token}`);
+        }
+        return headers;
+    },
+});
+
 
 export const AuthApi = createApi({
     reducerPath: 'AuthApi',
-    baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
+    baseQuery: baseQuery,
     endpoints: (builder) => ({
         RegisterApi: builder.mutation({
             query: (userData) => ({
@@ -40,7 +51,7 @@ export const AuthApi = createApi({
             }),
         }),
         resetPassword: builder.mutation({
-            query: ({_id, password}) => ({
+            query: ({ _id, password }) => ({
                 url: `${endpoints.resetPassword}/${_id}`,
                 method: 'PUT',
                 body: { password },

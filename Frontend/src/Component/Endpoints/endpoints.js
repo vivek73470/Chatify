@@ -4,4 +4,5 @@ export const endpoints = {
   login: '/user/login',
   verifyNumber: '/user/verifyNumber',
   resetPassword: '/user/resetPassword',
+  logout: '/user/logout',
 };

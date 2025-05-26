@@ -17,6 +17,7 @@ import { useLoginApiMutation } from '../../services/loginService';
 import Register from './Register';
 import notify from '../../Utils/toastNotification';
 import ForgotPassword from './ForgotPassword';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +26,7 @@ const Login = () => {
   const [openForgotDialog, setOpenForgotDialog] = useState(false);
 
   const [loginUser] = useLoginApiMutation();
+  const navigate = useNavigate();
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
@@ -59,6 +61,8 @@ const Login = () => {
       setLoading(true);
       const response = await loginUser(data).unwrap();
       if (response?.status) {
+        localStorage.setItem('token',response.token)
+        navigate('/dashboard')
         notify.success(response?.message);
       }
     } catch (error) {
