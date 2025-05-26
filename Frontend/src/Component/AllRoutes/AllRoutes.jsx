@@ -1,8 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../../Pages/Auth/Login';
-import Dashboard from '../../Pages/Dashboard/Dashboard';
 import ProtectedRoute from '../ProtectedRoute/ProtectedRoute';
+import ChatDashboard from '../../Pages/Dashboard/ChatDashboard';
 
 
 function AllRoutes() {
@@ -13,10 +13,10 @@ function AllRoutes() {
 
             <Route path='/' element={
                 <ProtectedRoute>
-                    <Dashboard />
+                    <ChatDashboard />
                 </ProtectedRoute>
             }>
-                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="chatDashboard" element={<ChatDashboard />} />
             </Route>
         </Routes>
     );

@@ -62,7 +62,7 @@ const Login = () => {
       const response = await loginUser(data).unwrap();
       if (response?.status) {
         localStorage.setItem('token',response.token)
-        navigate('/dashboard')
+        navigate('/chatDashboard')
         notify.success(response?.message);
       }
     } catch (error) {
