@@ -1,5 +1,6 @@
 const express = require('express');
 const User = require('../model/UserRegisterModel/usermodel')
+const authenticate = require('../middleware/middleware')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
@@ -34,12 +35,17 @@ userRouter.post('/login', async (req, res) => {
         if (!user) {
             return res.status(404).json({ status: false, message: 'Phone Number not found' })
         }
+
         const result = await bcrypt.compare(password, user.password);
-        console.log(result, 'result')
+
         if (result) {
             const token = jwt.sign({ userId: user._id }, 'chatify')
-            console.log(token, 'token')
-            return res.status(200).json({ status: true, message: "Login successfully", _id: user._id, token: token });
+            return res.status(200).json({
+                status: true,
+                message: "Login successfully",
+                _id: user._id,
+                token: token
+            });
         } else {
             return res.status(401).json({ message: "Wrong credentials" });
         }
@@ -48,6 +54,16 @@ userRouter.post('/login', async (req, res) => {
     }
 })
 
+//logout
+userRouter.post('/logout', authenticate, async (req, res) => {
+    try {
+        req.User.token = null;
+        await req.User.save();
+        return res.status(200).json({ message: "Logged out successfully" });
+    } catch (err) {
+        return res.status(500).json({ message: "Logout failed" });
+    }
+})
 // Verify Number & Generate Reset Code
 userRouter.post('/verifyNumber', async (req, res) => {
     const { number } = req.body;
