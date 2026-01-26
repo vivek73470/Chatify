@@ -10,7 +10,6 @@ const userModel = new mongoose.Schema({
         type: String,
         default: 'Hey there! I am using Chatify.',
     },
-    token: { type: String, default:null },
 }, { timestamps: true, versionKey: false });
 
 const User = mongoose.model("userRegister", userModel)

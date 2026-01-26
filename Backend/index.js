@@ -1,6 +1,8 @@
 const express = require('express')
 const connection = require('./config/db')
-const userRouter = require('./routes/userroute')
+const routes = require('./routes/index')
+const chatRouter  = require('./routes/chatRoute')
+const messageRouter  = require('./routes/messageRoute')
 const cors = require('cors');
 const app = express();
 
@@ -10,12 +12,12 @@ app.use(cors({
     origin:"*"
 }))
 
-app.use('/user',userRouter)
+app.use('/', routes)
 
+// app.use('/user',userRouter)
+// app.use('/chats',chatRouter)
+// app.use('/message',messageRouter)
 
-app.get('/',(req,res)=>{
-    return res.send('Heloo')
-})
 
 app.listen(PORT, async()=>{
     try{
