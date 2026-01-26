@@ -24,10 +24,6 @@ export const AuthApi = createApi({
                 url: endpoints.register,
                 method: 'POST',
                 body: userData,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-
             })
         }),
         LoginApi: builder.mutation({
@@ -35,9 +31,6 @@ export const AuthApi = createApi({
                 url: endpoints.login,
                 method: 'POST',
                 body: credentials,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
             }),
         }),
         verifyNumber: builder.mutation({
@@ -45,9 +38,6 @@ export const AuthApi = createApi({
                 url: endpoints.verifyNumber,
                 method: 'POST',
                 body: number,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
             }),
         }),
         resetPassword: builder.mutation({
@@ -55,9 +45,6 @@ export const AuthApi = createApi({
                 url: `${endpoints.resetPassword}/${_id}`,
                 method: 'PUT',
                 body: { password },
-                headers: {
-                    'Content-Type': 'application/json',
-                },
             }),
         }),
     })

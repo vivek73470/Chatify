@@ -1,8 +1,16 @@
 
 export const endpoints = {
-  register: '/user/register',
-  login: '/user/login',
-  verifyNumber: '/user/verifyNumber',
-  resetPassword: '/user/resetPassword',
-  logout: '/user/logout',
+  register: '/register',
+  login: '/login',
+  verifyNumber: '/verifyNumber',
+  resetPassword: '/resetPassword',
+  logout: '/logout',
+
+  chat: {
+    searchUserByNumber: '/user/search',
+    createOrFetchChat: "chats",
+    sendMessage: "messages",
+    getMessages: "messages",
+
+  }
 };
