@@ -7,7 +7,7 @@ export const endpoints = {
   logout: '/logout',
 
   alluser: {
-    getAllUser: 'users/getAllUsers',
+    getAllUser: '/users/getAllUsers',
 
   }
 };
