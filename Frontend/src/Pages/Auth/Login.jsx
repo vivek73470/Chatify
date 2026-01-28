@@ -18,7 +18,6 @@ import Register from './Register';
 import notify from '../../Utils/toastNotification';
 import ForgotPassword from './ForgotPassword';
 import { useNavigate } from 'react-router-dom';
-import {connectSocket} from '../../socket/socket'
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -62,10 +61,9 @@ const Login = () => {
       setLoading(true);
       const response = await loginUser(data).unwrap();
       if (response?.status) {
-        console.log(response,'rerrt')
+        localStorage.setItem('user',JSON.stringify(response.data))
         localStorage.setItem('token',response.token)
         navigate('/chatDashboard')
-        connectSocket(response?.data?._id)
         notify.success(response?.message);
       }
     } catch (error) {

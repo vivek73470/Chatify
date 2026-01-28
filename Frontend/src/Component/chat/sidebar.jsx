@@ -21,10 +21,9 @@ const getAvatarColor = (index) => {
 };
 
 
-const Sidebar = ({ onSelectUser }) => {
+const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const [search, setSearch] = useState("");
     const [debounceSearch, setDebounceSearch] = useState("");
-
     const { data, isLoading } = useGetAllUsersQuery({
         search: debounceSearch
     })
@@ -102,90 +101,92 @@ const Sidebar = ({ onSelectUser }) => {
                         No users found
                     </Typography>
                 </Box>
-
             ) : (
                 <List sx={{ overflowY: "auto", px: 1 }}>
-                    {data?.data?.map((user, index) => (
-                        <ListItemButton
-                            key={user._id}
-                            onClick={() => onSelectUser(user)}
-                            sx={{
-                                py: 1.5,
-                                px: 2,
-                                borderRadius: 1,
-                                mb: 0.5,
-                                "&:hover": { bgcolor: "#f5f5f5" },
-                            }}
-                        >
-                            <Badge
-                                overlap="circular"
-                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                variant="dot"
+                    {data?.data?.map((user, index) => {
+                        const isOnline = onlineUsers.includes(user._id);
+                        return (
+                            <ListItemButton
+                                key={user._id}
+                                onClick={() => onSelectUser(user)}
                                 sx={{
-                                    '& .MuiBadge-badge': {
-                                        backgroundColor: '#44b700',
-                                        width: 12,
-                                        height: 12,
-                                        borderRadius: '50%',
-                                        border: '2px solid white',
-                                    },
+                                    py: 1.5,
+                                    px: 2,
+                                    borderRadius: 1,
+                                    mb: 0.5,
+                                    "&:hover": { bgcolor: "#f5f5f5" },
                                 }}
                             >
-                                <Avatar
+                                <Badge
+                                    overlap="circular"
+                                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                    variant="dot"
                                     sx={{
-                                        width: 48,
-                                        height: 48,
-                                        bgcolor: getAvatarColor(index),
-                                        fontWeight: 600
+                                        '& .MuiBadge-badge': {
+                                            backgroundColor: isOnline ? "#44b700" : "#bdbdbd",
+                                            width: 12,
+                                            height: 12,
+                                            borderRadius: '50%',
+                                            border: '2px solid white',
+                                        },
                                     }}
                                 >
-                                    {getInitials(user.name)}
-                                </Avatar>
-                            </Badge>
-                            <Box sx={{ ml: 2, flex: 1, minWidth: 0 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                                    <Typography sx={{ color: '#000' }} fontWeight={600} fontSize="0.95rem">{user.name}</Typography>
-                                    <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
-                                        {formatTime(user.lastSeen)}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
+                                    <Avatar
                                         sx={{
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            fontSize: '0.85rem'
+                                            width: 48,
+                                            height: 48,
+                                            bgcolor: getAvatarColor(index),
+                                            fontWeight: 600
                                         }}
                                     >
-                                        {user.status}
-                                    </Typography>
-                                    {index < 2 && (
-                                        <Box
+                                        {getInitials(user.name)}
+                                    </Avatar>
+                                </Badge>
+                                <Box sx={{ ml: 2, flex: 1, minWidth: 0 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                        <Typography sx={{ color: '#000' }} fontWeight={600} fontSize="0.95rem">{user.name}</Typography>
+                                        <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
+                                            {formatTime(user.lastSeen)}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
                                             sx={{
-                                                bgcolor: '#2196F3',
-                                                color: 'white',
-                                                borderRadius: '50%',
-                                                width: 20,
-                                                height: 20,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '0.7rem',
-                                                fontWeight: 600,
-                                                ml: 1,
-                                                flexShrink: 0
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                fontSize: '0.85rem'
                                             }}
                                         >
-                                            {index + 1}
-                                        </Box>
-                                    )}
+                                            {user.status}
+                                        </Typography>
+                                        {index < 2 && (
+                                            <Box
+                                                sx={{
+                                                    bgcolor: '#2196F3',
+                                                    color: 'white',
+                                                    borderRadius: '50%',
+                                                    width: 20,
+                                                    height: 20,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 600,
+                                                    ml: 1,
+                                                    flexShrink: 0
+                                                }}
+                                            >
+                                                {index + 1}
+                                            </Box>
+                                        )}
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </ListItemButton>
-                    ))}
+                            </ListItemButton>
+                        )
+                    })}
                 </List>
             )
             }

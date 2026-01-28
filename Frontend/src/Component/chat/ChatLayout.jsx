@@ -4,7 +4,7 @@ import { Box, Drawer, useMediaQuery } from "@mui/material";
 import Sidebar from "./sidebar";
 import ChatArea from "./ChatArea";
 
-const ChatLayout = () => {
+const ChatLayout = ({onlineUsers}) => {
   const isMobile = useMediaQuery("(max-width:900px)");
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -12,10 +12,10 @@ const ChatLayout = () => {
     <Box sx={{ display: "flex", height: "100vh" }}>
       {isMobile ? (
         <Drawer open={!selectedUser} variant="temporary">
-          <Sidebar onSelectUser={setSelectedUser} />
+          <Sidebar onSelectUser={setSelectedUser} onlineUsers={onlineUsers} />
         </Drawer>
       ) : (
-        <Sidebar onSelectUser={setSelectedUser} />
+        <Sidebar onSelectUser={setSelectedUser} onlineUsers={onlineUsers} />
       )}
 
       {(!isMobile || selectedUser) && (
