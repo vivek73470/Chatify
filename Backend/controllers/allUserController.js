@@ -2,11 +2,8 @@ const user = require('../services/authService')
 
 const getAllUsers = async (req, res) => {
     try {
-        // const loggedInUserId = req.user.id; 
         const { search } = req.query;
-        let condition = {
-            // _id: { $ne: loggedInUserId }
-        }
+        let condition = {}
         if (search) {
             condition.$or = [
                 { name: { $regex: search, $options: 'i' } },
