@@ -6,11 +6,8 @@ export const endpoints = {
   resetPassword: '/resetPassword',
   logout: '/logout',
 
-  chat: {
-    searchUserByNumber: '/user/search',
-    createOrFetchChat: "chats",
-    sendMessage: "messages",
-    getMessages: "messages",
+  alluser: {
+    getAllUser: 'users/getAllUsers',
 
   }
 };
