@@ -1,24 +1,28 @@
 
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import ChatLayout from '../../Component/chat/ChatLayout';
-import { connectSocket,disconnectSocket } from '../../socket/socket';
+import { connectSocket, disconnectSocket } from '../../socket/socket';
 const ChatDashboard = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    console.log(user,'fmlocal')
-    if (user?._id) {
-      connectSocket(user?._id, setOnlineUsers)
-    }
+    console.log(user, 'fmlocal')
+    if (!user?._id) return;
+    const socket = connectSocket(user?._id)
+    socket.on("getOnlineUsers", (users) => {
+      setOnlineUsers(users);
+    })
+
     return () => {
+      socket.off("getOnlineUsers");
       disconnectSocket();
     }
   }, [])
 
   return (
     <>
-      <ChatLayout onlineUsers={onlineUsers}/>
+      <ChatLayout onlineUsers={onlineUsers} />
     </>
 
   );

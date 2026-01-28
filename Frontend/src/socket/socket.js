@@ -1,9 +1,9 @@
 import { io } from "socket.io-client";
 
 const BASE_URL = import.meta.env.VITE_SERVER_URL;
-let socket;
+let socket = null;
 
-export const connectSocket = (userId, setOnlineUsers) => {
+export const connectSocket = (userId) => {
   if (socket) return socket;
 
   socket = io(BASE_URL, {
@@ -17,13 +17,12 @@ export const connectSocket = (userId, setOnlineUsers) => {
     socket.emit("addUser", userId);
   });
 
-  socket.on("getOnlineUsers", (users) => {
-    console.log("Online users from server:", users);
-    setOnlineUsers(users);
-  });
-
+  socket.on("disconnect", ()=>{
+    console.log('socket disconnected')
+  })
 
   return socket;
+  
 };
 
 export const getSocket = () => socket;

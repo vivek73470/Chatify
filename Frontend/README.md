@@ -17,7 +17,10 @@ The Socket.io server
 <!-- What you do with io -->
 io.on("connection", (socket) => {
   ...
-}); - When ANY user connects, give me their socket
+}); - When ANY user connects, give me their socket or new socket connection created
+
+<!-- broadcast to ALL connected clients -->
+io.emit
 
 <!-- Send message using io -->
 io.to(socketId).emit("event", data);
@@ -43,4 +46,12 @@ socket.on - LISTEN to event  - socket.on("connect", () => {
 
 <!-- ONE SENTENCE TO REMEMBER FOREVER -->
 io manages everyone, socket manages one connection
-emit sends, on receives
+socket.emit- sends - Client → Server OR Server → Client
+socket.on- receives - Client → Server OR Server → Client
+
+
+<!-- Mental model (remember this forever) -->
+Socket file:
+“I only connect and emit”
+Components:
+“I listen and update UI”
