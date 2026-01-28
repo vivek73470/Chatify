@@ -7,13 +7,23 @@ const createUser = async (data) => {
 
 //  Find user by ID
 const findUserById = async (id) => {
-    return await User.findById(id);
+    return await user.findById(id);
 };
 
 //  Find user by Phone
 const findUserByPhone = async (number) => {
     return await user.findOne({ number });
 }
+
+// findAll
+const findAll = async (condition) => {
+    try {
+        const data = await user.find(condition);
+        return data;
+    } catch (error) {
+        console.log(error);
+    };
+};
 
 //  Find user by Id & update
 const updateUserPassword = async (id, password) => {
@@ -27,5 +37,6 @@ module.exports = {
     createUser,
     findUserById,
     findUserByPhone,
-    updateUserPassword
+    updateUserPassword,
+    findAll
 }
