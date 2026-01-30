@@ -1,6 +1,7 @@
 const express = require('express')
 const http = require('http');
 const { Server } = require('socket.io')
+const {initSocket} = require("./socket/index.js");
 
 const connection = require('./config/db')
 const routes = require('./routes/index')
@@ -17,41 +18,10 @@ const io = new Server(server, {
 })
 
 app.use(express.json());
-
-app.use(cors({
-  origin: "*"
-}))
-
+app.use(cors({ origin: "*" }))
 app.use('/', routes)
 
-const onlineUsers = new Map();
-
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  socket.on("addUser", (userId) => {
-    onlineUsers.set(userId, socket.id);
-
-    io.emit(
-      "getOnlineUsers",
-      Array.from(onlineUsers.keys())
-    );
-  });
-
-  socket.on("disconnect", () => {
-    for (let [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
-        break;
-      }
-    }
-
-    io.emit(
-      "getOnlineUsers",
-      Array.from(onlineUsers.keys())
-    );
-  });
-});
+initSocket(io);
 
 
 
