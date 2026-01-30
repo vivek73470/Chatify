@@ -17,6 +17,7 @@ import { formatTime, getInitials } from '../../Utils/common'
 import { useRef } from "react";
 import PersonOutline from "@mui/icons-material/PersonOutline";
 import Logout from "@mui/icons-material/Logout";
+import { useLogout } from "../../Utils/logout";
 
 
 const getAvatarColor = (index) => {
@@ -30,6 +31,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const [open, setOpen] = useState(false);
     const menuRef = useRef();
     const buttonRef = useRef();
+    const logout = useLogout();
 
     const { data, isLoading } = useGetAllUsersQuery({
         search: debounceSearch
@@ -121,6 +123,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                 <Box
                                     onClick={() => {
                                         setOpen(false);
+                                        logout();
 
                                     }}
                                     sx={{
