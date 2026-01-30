@@ -81,8 +81,8 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                 text
             })
             // emit by socket
-            sendSocketMessage(res?.data)
-            setMessages((prev) => [...prev, res.data]);
+            sendSocketMessage(res?.data?.data)
+            setMessages((prev) => [...prev, res.data?.data]);
             setText("");
 
         } catch (err) {
