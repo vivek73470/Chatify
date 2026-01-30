@@ -8,6 +8,8 @@ export const endpoints = {
 
   alluser: {
     getAllUser: '/users/getAllUsers',
-
+  },
+  message: {
+    sendMessage: 'message/send',
   }
 };

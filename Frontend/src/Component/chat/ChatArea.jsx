@@ -17,8 +17,29 @@ import {
     ChatBubbleOutline
 } from "@mui/icons-material";
 import { getInitials } from '../../Utils/common'
+import { useEffect, useState } from "react";
+import { receiveSocketMessage, sendSocketMessage } from "../../socket/socket";
+import { useSendMessageMutation } from "../../services/chatService";
+
 
 const ChatArea = ({ user, onBack, isMobile }) => {
+    const [messages, setMessages] = useState([]);
+    const [text, setText] = useState('');
+    const loggedInUser = JSON.parse(localStorage.getItem('user'))
+
+    const [sendMessageApi] = useSendMessageMutation();
+
+    useEffect(() => {
+        receiveSocketMessage((message) => {
+            if (
+                message.sender === user?._id ||
+                message.receiver === user?._id
+            ) {
+                setMessages((prev) => [...prev, message]);
+            }
+        });
+    }, [user]);
+
     if (!user) {
         return (
             <Box
@@ -52,11 +73,22 @@ const ChatArea = ({ user, onBack, isMobile }) => {
         );
     }
 
-    const mockMessages = [
-        { id: 1, text: "Hey, how are you?", sender: "other", time: "10:28 AM" },
-        { id: 2, text: "I'm doing great! How about you?", sender: "me", time: "10:29 AM" },
-        { id: 3, text: "Good to hear! I wanted to ask you about...", sender: "other", time: "10:30 AM" }
-    ];
+    const handleSend = async () => {
+        if (!text.trim()) return;
+        try {
+            const res = await sendMessageApi({
+                receiverId: user?._id,
+                text
+            })
+            // emit by socket
+            sendSocketMessage(res?.data)
+            setMessages((prev) => [...prev, res.data]);
+            setText("");
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
     return (
         <Box
@@ -87,7 +119,7 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                     {getInitials(user.name)}
                 </Avatar>
                 <Box sx={{ flex: 1 }}>
-                    <Typography sx={{color:'#000'}} fontWeight={600} fontSize="1rem">{user.name}</Typography>
+                    <Typography sx={{ color: '#000' }} fontWeight={600} fontSize="1rem">{user.name}</Typography>
                     <Typography variant="caption" color="text.secondary" fontSize="0.8rem">
                         Online
                     </Typography>
@@ -113,44 +145,47 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                     gap: 2
                 }}
             >
-                {mockMessages.map((message) => (
-                    <Box
-                        key={message.id}
-                        sx={{
-                            display: 'flex',
-                            justifyContent: message.sender === 'me' ? 'flex-end' : 'flex-start',
-                        }}
-                    >
+                {messages?.map((message) => {
+                    const isMe = message.sender === loggedInUser._id;
+                    return (
                         <Box
+                            key={message.id}
                             sx={{
-                                maxWidth: '60%',
                                 display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: message.sender === 'me' ? 'flex-end' : 'flex-start',
+                                justifyContent: message.sender === 'isMe' ? 'flex-end' : 'flex-start',
                             }}
                         >
                             <Box
                                 sx={{
-                                    bgcolor: message.sender === 'me' ? '#2196F3' : '#fff',
-                                    color: message.sender === 'me' ? '#fff' : '#000',
-                                    px: 2,
-                                    py: 1.5,
-                                    borderRadius: 2,
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                    maxWidth: '60%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: message.sender === 'isMe' ? 'flex-end' : 'flex-start',
                                 }}
                             >
-                                <Typography fontSize="0.9rem">{message.text}</Typography>
+                                <Box
+                                    sx={{
+                                        bgcolor: message.sender === 'isMe' ? '#2196F3' : '#fff',
+                                        color: message.sender === 'isMe' ? '#fff' : '#000',
+                                        px: 2,
+                                        py: 1.5,
+                                        borderRadius: 2,
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                    }}
+                                >
+                                    <Typography fontSize="0.9rem">{message.text}</Typography>
+                                </Box>
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mt: 0.5, fontSize: '0.7rem' }}
+                                >
+                                    {message.time}
+                                </Typography>
                             </Box>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ mt: 0.5, fontSize: '0.7rem' }}
-                            >
-                                {message.time}
-                            </Typography>
                         </Box>
-                    </Box>
-                ))}
+                    )
+                })}
             </Box>
 
             <Box sx={{ p: 2, bgcolor: '#fff', borderTop: '1px solid #e0e0e0' }}>
@@ -162,6 +197,8 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                         fullWidth
                         placeholder="Type a message..."
                         size="small"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
@@ -188,6 +225,7 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                         }}
                     />
                     <IconButton
+                        onClick={handleSend}
                         sx={{
                             bgcolor: '#2196F3',
                             color: 'white',

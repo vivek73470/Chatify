@@ -32,6 +32,16 @@ export const disconnectSocket = () => {
   }
 };
 
+export const sendSocketMessage = (message) => {
+  const socket = initSocket();
+  socket.emit("sendMessage", message)
+};
+
+export const receiveSocketMessage = (callback) => {
+  const socket = initSocket();
+  socket.on("receiveMessage", callback);
+}
+
 // export const getSocket = () => socket;
 
 
