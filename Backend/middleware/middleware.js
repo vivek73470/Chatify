@@ -1,23 +1,40 @@
 const jwt = require('jsonwebtoken')
 const User = require('../model/UserRegisterModel/usermodel')
 
-const authenticate = async (req, res, next) => {
-    const token = req.headers.authorization;
+const auth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
-        return res.status(401).send("Authentication token is required");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: false,
+        message: "No token provided",
+      });
     }
 
-    try {
-        const decoded = jwt.verify(token, 'chatify');
-        if (decoded) {
-            return next();
-        } else {
-            return res.status(401).send("Invalid Token");
-        }
-    } catch (err) {
-        return res.status(500).send("Token verification failed");
+    const token = authHeader.split(" ")[1];
+
+    const decoded = jwt.verify(token, "chatify");
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({
+        status: false,
+        message: "User not found",
+      });
     }
+
+    req.user = user;
+    next();
+
+  } catch (error) {
+    return res.status(401).json({
+      status: false,
+      message: "Token verification failed",
+    });
+  }
 };
 
-module.exports = authenticate;
+module.exports = auth;
+
