@@ -1,7 +1,7 @@
 const express = require('express')
 const http = require('http');
 const { Server } = require('socket.io')
-const {initSocket} = require("./socket/index.js");
+const { initSocket } = require("./socket/index.js");
 
 const connection = require('./config/db')
 const routes = require('./routes/index')
@@ -21,6 +21,7 @@ app.use(express.json());
 app.use(cors({ origin: "*" }))
 app.use('/', routes)
 
+// runs ONCE when backend starts.
 initSocket(io);
 
 

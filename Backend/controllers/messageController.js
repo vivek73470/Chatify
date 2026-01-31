@@ -1,4 +1,4 @@
-const message = require('../services/messageService');
+const messageService  = require('../services/messageService');
 
 const sendMessage = async (req, res) => {
     try {
@@ -11,7 +11,7 @@ const sendMessage = async (req, res) => {
             });
         }
 
-        const savedMessage = await message.createMessage({
+        const savedMessage = await messageService .createMessage({
             sender: req.user._id,
             receiver: receiverId,
             text
@@ -26,6 +26,34 @@ const sendMessage = async (req, res) => {
     }
 
 }
+
+const getMessage = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const otherUserId = req.params.id;
+
+        const messagesData = await messageService.find({
+            $or: [
+                { sender: loggedInUserId, receiver: otherUserId },
+                { sender: otherUserId, receiver: loggedInUserId },
+            ]
+        }).sort({ createdAt: 1 })
+//         const result = messageService.find({});
+// console.log("TYPE:", typeof result);
+// console.log("HAS SORT:", typeof result?.sort);
+
+        res.status(200).json({
+            status: true,
+            data: messagesData,
+        });
+    } catch (err) {
+        res.status(500).json({
+            status: false,
+            message: err.message,
+        });
+    }
+};
 module.exports = {
-    sendMessage
+    sendMessage,
+    getMessage
 }

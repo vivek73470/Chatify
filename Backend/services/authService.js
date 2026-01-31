@@ -16,7 +16,7 @@ const findUserByPhone = async (number) => {
 }
 
 // findAll
-const findAll = async (condition) => {
+const find = async (condition) => {
     try {
         const data = await user.find(condition);
         return data;
@@ -38,5 +38,5 @@ module.exports = {
     findUserById,
     findUserByPhone,
     updateUserPassword,
-    findAll
+    find
 }

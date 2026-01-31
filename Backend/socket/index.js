@@ -6,6 +6,8 @@ import typingHandlers from "./typing.socket.js";
 export const initSocket = (io) => {
     const onlineUsers = new Map();
 
+    // io.on("connection") is just a listener
+    // it does not run immediately - run only when frontend calls
     io.on("connection", (socket) => {
         console.log("Socket connected:", socket.id);
 

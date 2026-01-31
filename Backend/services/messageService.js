@@ -10,8 +10,13 @@ const findMessageById = async (id) => {
     return await message.findById(id);
 };
 
+// findAll
+const find =  (condition) => {
+       return  message.find(condition);
+};
 
 module.exports = {
     createMessage,
- 
+    find,
+    findMessageById
 }
