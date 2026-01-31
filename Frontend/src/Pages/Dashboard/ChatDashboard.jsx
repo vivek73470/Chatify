@@ -12,7 +12,6 @@ const ChatDashboard = () => {
       connectUser(user._id);
       onOnlineUsers(setOnlineUsers);
     }
-
     return () => {
       disconnectSocket();
     };

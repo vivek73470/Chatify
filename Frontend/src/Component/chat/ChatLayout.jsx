@@ -4,7 +4,7 @@ import { Box, Drawer, useMediaQuery } from "@mui/material";
 import Sidebar from "./sidebar";
 import ChatArea from "./ChatArea";
 
-const ChatLayout = ({onlineUsers}) => {
+const ChatLayout = ({ onlineUsers }) => {
   const isMobile = useMediaQuery("(max-width:900px)");
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -20,6 +20,7 @@ const ChatLayout = ({onlineUsers}) => {
 
       {(!isMobile || selectedUser) && (
         <ChatArea
+          onlineUsers={onlineUsers}
           user={selectedUser}
           onBack={() => setSelectedUser(null)}
           isMobile={isMobile}

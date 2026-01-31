@@ -21,3 +21,11 @@ export const getInitials = (name) => {
         .toUpperCase()
         .slice(0, 2);
 };
+
+export const formatMessageTime = (date) => {
+  const d = new Date(date);
+  return d.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};

@@ -4,7 +4,8 @@ import {
     IconButton,
     TextField,
     Avatar,
-    InputAdornment
+    InputAdornment,
+    CircularProgress
 } from "@mui/material";
 import {
     ArrowBack,
@@ -16,18 +17,29 @@ import {
     Send,
     ChatBubbleOutline
 } from "@mui/icons-material";
-import { getInitials } from '../../Utils/common'
+import { formatMessageTime, getInitials } from '../../Utils/common'
 import { useEffect, useState } from "react";
 import { receiveSocketMessage, sendSocketMessage } from "../../socket/socket";
-import { useSendMessageMutation } from "../../services/chatService";
+import { useGetMessageQuery, useSendMessageMutation } from "../../services/chatService";
 
 
-const ChatArea = ({ user, onBack, isMobile }) => {
+const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const loggedInUser = JSON.parse(localStorage.getItem('user'))
+    const isUserOnline = onlineUsers.includes(user?._id)
 
     const [sendMessageApi] = useSendMessageMutation();
+    const { data, isLoading } = useGetMessageQuery(
+        user?._id,
+        { skip: !user }
+    );
+
+    useEffect(() => {
+        if (data?.data) {
+            setMessages(data.data);
+        }
+    }, [data]);
 
     useEffect(() => {
         receiveSocketMessage((message) => {
@@ -121,7 +133,7 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                 <Box sx={{ flex: 1 }}>
                     <Typography sx={{ color: '#000' }} fontWeight={600} fontSize="1rem">{user.name}</Typography>
                     <Typography variant="caption" color="text.secondary" fontSize="0.8rem">
-                        Online
+                        {isUserOnline ? 'Online' : 'Offline'}
                     </Typography>
                 </Box>
                 <IconButton>
@@ -145,47 +157,56 @@ const ChatArea = ({ user, onBack, isMobile }) => {
                     gap: 2
                 }}
             >
-                {messages?.map((message) => {
-                    const isMe = message.sender === loggedInUser._id;
-                    return (
-                        <Box
-                            key={message.id}
-                            sx={{
-                                display: 'flex',
-                                justifyContent: message.sender === 'isMe' ? 'flex-end' : 'flex-start',
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    maxWidth: '60%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: message.sender === 'isMe' ? 'flex-end' : 'flex-start',
-                                }}
-                            >
+                {isLoading ? (
+                    <Box sx={{ display: "flex", justifyContent: "center" }}>
+                        <CircularProgress size={24} />
+                    </Box>
+                ) : (
+                    <>
+                        {messages?.map((message) => {
+                            const isMe = message.sender === loggedInUser._id;
+                            return (
                                 <Box
+                                    key={message.id}
                                     sx={{
-                                        bgcolor: message.sender === 'isMe' ? '#2196F3' : '#fff',
-                                        color: message.sender === 'isMe' ? '#fff' : '#000',
-                                        px: 2,
-                                        py: 1.5,
-                                        borderRadius: 2,
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                        display: 'flex',
+                                        justifyContent: isMe ? "flex-end" : "flex-start",
                                     }}
                                 >
-                                    <Typography fontSize="0.9rem">{message.text}</Typography>
+                                    <Box
+                                        sx={{
+                                            maxWidth: '60%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: isMe ? 'flex-end' : 'flex-start',
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                bgcolor: isMe ? '#2196F3' : '#fff',
+                                                color: isMe ? '#fff' : '#000',
+                                                px: 2,
+                                                py: 1.5,
+                                                borderRadius: 2,
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                            }}
+                                        >
+                                            <Typography fontSize="0.9rem">{message.text}</Typography>
+                                        </Box>
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ mt: 0.5, fontSize: '0.7rem' }}
+                                        >
+                                            {formatMessageTime(message.createdAt)}
+                                        </Typography>
+                                    </Box>
                                 </Box>
-                                <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ mt: 0.5, fontSize: '0.7rem' }}
-                                >
-                                    {message.time}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    )
-                })}
+                            )
+                        })}
+                    </>
+                )}
+
             </Box>
 
             <Box sx={{ p: 2, bgcolor: '#fff', borderTop: '1px solid #e0e0e0' }}>

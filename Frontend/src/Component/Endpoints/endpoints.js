@@ -11,5 +11,6 @@ export const endpoints = {
   },
   message: {
     sendMessage: 'message/send',
+    getMessage: 'message/get',
   }
 };

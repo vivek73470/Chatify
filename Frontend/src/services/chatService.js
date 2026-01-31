@@ -13,9 +13,17 @@ export const chatApi = createApi({
                 method: 'POST',
                 body: data
             })
-        })
+        }),
+        getMessage: builder.query({
+            query: (id) => ({
+                url: `${endpoints.message.getMessage}/${id}`,
+                method: 'GET',
+            })
+        }),
+    
     })
 })
 export const {
-    useSendMessageMutation
+    useSendMessageMutation,
+    useGetMessageQuery
 } = chatApi

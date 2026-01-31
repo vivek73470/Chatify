@@ -55,3 +55,12 @@ Socket file:
 “I only connect and emit”
 Components:
 “I listen and update UI”
+
+
+// io.emit(...)         send to everyone
+// io.to(id).emit(...)  send to specific socket
+
+// One connected user
+// socket.id
+// socket.emit(...)
+// socket.on(...)

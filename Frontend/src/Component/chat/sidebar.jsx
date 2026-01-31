@@ -58,6 +58,8 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    console.log(data?.data)
+
     return (
         <>
             <Box
@@ -191,7 +193,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                 ) : (
                     <List sx={{ overflowY: "auto", px: 1 }}>
                         {data?.data?.map((user, index) => {
-                            const isOnline = onlineUsers.includes(user._id);
+                            const isOnline = onlineUsers.includes(user?._id);
                             return (
                                 <ListItemButton
                                     key={user._id}
