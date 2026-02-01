@@ -8,15 +8,12 @@ import ChatDashboard from '../../Pages/Dashboard/ChatDashboard';
 function AllRoutes() {
     return (
         <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
 
-            <Route path='/' element={
-                <ProtectedRoute>
-                    <ChatDashboard />
-                </ProtectedRoute>
-            }>
-                <Route path="chatDashboard" element={<ChatDashboard />} />
+            {/* Protected */}
+            <Route element={<ProtectedRoute />}>
+                <Route index element={<Navigate to="/chatDashboard" replace />} />
+                <Route path="/chatDashboard" element={<ChatDashboard />} />
             </Route>
         </Routes>
     );
