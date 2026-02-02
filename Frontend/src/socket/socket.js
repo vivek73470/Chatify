@@ -42,6 +42,35 @@ export const receiveSocketMessage = (callback) => {
   socket.on("receiveMessage", callback);
 }
 
+export const sendReadReceipt = ({ senderId, receiverId }) => {
+  const socket = initSocket();
+  socket.emit("messageRead", {
+    senderId,
+    receiverId
+  })
+}
+
+export const onMessageStatusUpdate = (callback) => {
+  const socket = initSocket();
+  socket.on("messageStatusUpdate", callback); 
+};
+
+export const onMessageReadUpdate = (callback) => {
+  const socket = initSocket();
+  socket.on("messageReadUpdate", callback); 
+};
+
+export const emitUserOnline = (userId) => {
+  const socket = initSocket();
+  socket.emit("userOnline", { userId });
+};
+
+export const onUserCameOnline = (callback) => {
+  const socket = initSocket();
+  socket.on("userCameOnline", callback);
+};
+
+
 // export const getSocket = () => socket;
 
 

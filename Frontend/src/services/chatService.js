@@ -20,10 +20,32 @@ export const chatApi = createApi({
                 method: 'GET',
             })
         }),
+        markMessageAsRead: builder.mutation({
+            query: (id) => ({
+                url: `${endpoints.message.markMessageRead}/${id}`,
+                method: 'PUT',
+            })
+        }),
+         markMessageAsDelivered: builder.mutation({
+            query: (id) => ({
+                url: `${endpoints.message.markMessageDelivered}/${id}`,
+                method: 'PUT',
+            })
+        }),
+         unReadMessageCount: builder.query({
+            query: (id) => ({
+                url: `${endpoints.message.unReadMessageCount}/${id}`,
+                method: 'GET',
+            })
+        }),
     
     })
 })
 export const {
     useSendMessageMutation,
-    useGetMessageQuery
+    useGetMessageQuery,
+    useMarkMessageAsReadMutation,
+    useMarkMessageAsDeliveredMutation,
+    useUnReadMessageCountQuery
+    
 } = chatApi

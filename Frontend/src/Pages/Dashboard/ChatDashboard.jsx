@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import ChatLayout from '../../Component/chat/ChatLayout';
-import { disconnectSocket,connectUser,onOnlineUsers } from '../../socket/socket';
+import { disconnectSocket,connectUser,onOnlineUsers, emitUserOnline } from '../../socket/socket';
 
 const ChatDashboard = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -10,6 +10,7 @@ const ChatDashboard = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user?._id) {
       connectUser(user._id);
+      emitUserOnline(user._id);
       onOnlineUsers(setOnlineUsers);
     }
     return () => {

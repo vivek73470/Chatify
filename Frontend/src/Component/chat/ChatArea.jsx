@@ -19,8 +19,9 @@ import {
 } from "@mui/icons-material";
 import { formatMessageTime, getInitials } from '../../Utils/common'
 import { useEffect, useState } from "react";
-import { receiveSocketMessage, sendSocketMessage } from "../../socket/socket";
-import { useGetMessageQuery, useSendMessageMutation } from "../../services/chatService";
+import { initSocket, onUserCameOnline, receiveSocketMessage, sendReadReceipt, sendSocketMessage } from "../../socket/socket";
+import { useGetMessageQuery, useMarkMessageAsDeliveredMutation, useMarkMessageAsReadMutation, useSendMessageMutation } from "../../services/chatService";
+import MessageTick from "../MessageTick/MessageTick";
 
 
 const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
@@ -30,6 +31,8 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const isUserOnline = onlineUsers.includes(user?._id)
 
     const [sendMessageApi] = useSendMessageMutation();
+    const [markAsReadApi] = useMarkMessageAsReadMutation();
+    const [markAsDeliveredApi] = useMarkMessageAsDeliveredMutation();
     const { data, isLoading } = useGetMessageQuery(
         user?._id,
         { skip: !user }
@@ -41,16 +44,107 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         }
     }, [data]);
 
+    // RECEIVE MESSAGE & AUTO-MARK AS READ
     useEffect(() => {
         receiveSocketMessage((message) => {
-            if (
+            const isCurrentChat =
                 message.sender === user?._id ||
-                message.receiver === user?._id
-            ) {
-                setMessages((prev) => [...prev, message]);
+                message.receiver === user?._id;
+
+            if (isCurrentChat) {
+                setMessages(prev => [...prev, message]);
+
+                if (message.sender === user?._id) {
+                    markAsReadApi(user?._id);
+                    sendReadReceipt({
+                        senderId: user?._id,
+                        receiverId: loggedInUser?._id,
+                    });
+                }
             }
         });
+    }, [user, loggedInUser._id, markAsReadApi]);
+
+    //  Listen for when the chat user comes online
+    useEffect(() => {
+        onUserCameOnline(async ({ userId }) => {
+            // If this is the user we're chatting with
+            if (userId === user?._id) {
+                // Mark all "sent" messages to this user as "delivered"
+                await markAsDeliveredApi(user._id);
+
+                // Update local state
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        msg.receiver === userId &&
+                            msg.sender === loggedInUser._id &&
+                            msg.status === "sent"
+                            ? { ...msg, status: "delivered" }
+                            : msg
+                    )
+                );
+            }
+        });
+    }, [user, loggedInUser._id, markAsDeliveredApi]);
+
+    // Mark messages as READ when opening chat
+    useEffect(() => {
+        if (!user) return;
+        const markRead = async () => {
+            await markAsReadApi(user?._id);
+            sendReadReceipt({
+                senderId: user?._id,
+                receiverId: loggedInUser?._id,
+            });
+        };
+        markRead();
     }, [user]);
+
+    const handleSend = async () => {
+        if (!text.trim()) return;
+        try {
+            const res = await sendMessageApi({
+                receiverId: user?._id,
+                text
+            })
+            // emit by socket
+            sendSocketMessage(res?.data?.data)
+            setMessages((prev) => [...prev, res.data?.data]);
+            setText("");
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    useEffect(() => {
+        const socket = initSocket();
+
+        // For read status (blue ticks)
+        socket.on("messageReadUpdate", ({ receiverId }) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.receiver === receiverId && msg.sender === loggedInUser._id
+                        ? { ...msg, status: "read" }
+                        : msg
+                )
+            );
+        });
+
+        // For delivered status (double gray ticks)
+        socket.on("messageStatusUpdate", ({ messageId, status }) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === messageId ? { ...msg, status } : msg
+                )
+            );
+        });
+
+        return () => {
+            socket.off("messageReadUpdate");
+            socket.off("messageStatusUpdate");
+        };
+    }, [loggedInUser._id]);
 
     if (!user) {
         return (
@@ -85,30 +179,13 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         );
     }
 
-    const handleSend = async () => {
-        if (!text.trim()) return;
-        try {
-            const res = await sendMessageApi({
-                receiverId: user?._id,
-                text
-            })
-            // emit by socket
-            sendSocketMessage(res?.data?.data)
-            setMessages((prev) => [...prev, res.data?.data]);
-            setText("");
-
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
     return (
         <Box
             sx={{
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
-                bgcolor: "#fafafa",
+                bgcolor: "#f0f2f5",
             }}
         >
             <Box
@@ -154,7 +231,8 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                     overflowY: "auto",
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 2
+                    gap: 2,
+                    background: '#efeae240',
                 }}
             >
                 {isLoading ? (
@@ -162,49 +240,81 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                         <CircularProgress size={24} />
                     </Box>
                 ) : (
-                    <>
-                        {messages?.map((message) => {
-                            const isMe = message.sender === loggedInUser._id;
-                            return (
+                 <>
+                    {messages?.map((message) => {
+                        const isMe = message.sender === loggedInUser._id;
+                        return (
+                            <Box
+                                key={message._id}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: isMe ? "flex-end" : "flex-start",
+                                    mb: 0.5,
+                                }}
+                            >
                                 <Box
-                                    key={message.id}
                                     sx={{
+                                        maxWidth: '65%',
                                         display: 'flex',
-                                        justifyContent: isMe ? "flex-end" : "flex-start",
+                                        flexDirection: 'column',
+                                        alignItems: isMe ? 'flex-end' : 'flex-start',
                                     }}
                                 >
                                     <Box
                                         sx={{
-                                            maxWidth: '60%',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: isMe ? 'flex-end' : 'flex-start',
+                                            bgcolor: isMe ? '#d9fdd3' : '#fff',
+                                            color: '#111',
+                                            px: 1.5,
+                                            py: 1,
+                                            borderRadius: isMe ? '8px 8px 0 8px' : '8px 8px 8px 0',
+                                            boxShadow: '0 1px 0.5px rgba(11,20,26,0.13)',
+                                            position: 'relative',
+                                            minWidth: '80px',
                                         }}
                                     >
-                                        <Box
-                                            sx={{
-                                                bgcolor: isMe ? '#2196F3' : '#fff',
-                                                color: isMe ? '#fff' : '#000',
-                                                px: 2,
-                                                py: 1.5,
-                                                borderRadius: 2,
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                        <Typography 
+                                            fontSize="0.94rem" 
+                                            sx={{ 
+                                                pr: isMe ? 7 : 0,
+                                                pb: 0.5,
+                                                lineHeight: 1.4,
+                                                whiteSpace: 'pre-wrap',
+                                                wordBreak: 'break-word',
                                             }}
                                         >
-                                            <Typography fontSize="0.9rem">{message.text}</Typography>
-                                        </Box>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{ mt: 0.5, fontSize: '0.7rem' }}
-                                        >
-                                            {formatMessageTime(message.createdAt)}
+                                            {message.text}
                                         </Typography>
+                                        
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 0.5,
+                                                justifyContent: 'flex-end',
+                                            }}
+                                        >
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    fontSize: '0.68rem',
+                                                    color: 'rgba(0,0,0,0.45)',
+                                                    lineHeight: 1,
+                                                }}
+                                            >
+                                                {formatMessageTime(message.createdAt)}
+                                            </Typography>
+                                            
+                                            <MessageTick
+                                                isMe={isMe}
+                                                status={message.status}
+                                            />
+                                        </Box>
                                     </Box>
                                 </Box>
-                            )
-                        })}
-                    </>
+                            </Box>
+                        )
+                    })}
+                </>
                 )}
 
             </Box>
