@@ -1,4 +1,4 @@
-const messageService  = require('../services/messageService');
+const messageService = require('../services/messageService');
 
 const sendMessage = async (req, res) => {
     try {
@@ -11,10 +11,11 @@ const sendMessage = async (req, res) => {
             });
         }
 
-        const savedMessage = await messageService .createMessage({
+        const savedMessage = await messageService.createMessage({
             sender: req.user._id,
             receiver: receiverId,
-            text
+            text,
+            status: "sent"
         });
         res.status(201).json({
             status: true,
@@ -38,10 +39,6 @@ const getMessage = async (req, res) => {
                 { sender: otherUserId, receiver: loggedInUserId },
             ]
         }).sort({ createdAt: 1 })
-//         const result = messageService.find({});
-// console.log("TYPE:", typeof result);
-// console.log("HAS SORT:", typeof result?.sort);
-
         res.status(200).json({
             status: true,
             data: messagesData,
@@ -53,7 +50,71 @@ const getMessage = async (req, res) => {
         });
     }
 };
+
+const markMessageAsRead = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const otherUserId = req.params.id;
+
+        await messageService.UpdateMany(
+            {
+                sender: otherUserId,
+                receiver: loggedInUserId,
+                status: { $ne: "read" },
+            },
+            { $set: { status: "read" } }
+        );
+        res.status(200).json({ status: true });
+
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
+}
+
+const markMessageAsDelivered = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const otherUserId = req.params.id;
+
+        await messageService.UpdateMany(
+            {
+                sender: otherUserId,
+                receiver: loggedInUserId,
+                status: "sent",
+            },
+            { $set: { status: "delivered" } }
+        );
+        res.status(200).json({ status: true });
+    } catch (err) {
+        res.status(500).json({ status: false, message: err.message });
+    }
+}
+
+const getUnreadMessageCount = async (req,res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const otherUserId = req.params.id;
+
+        const count = await messageService.count({
+            sender: otherUserId,
+            receiver: loggedInUserId,
+            status: { $ne: "read" }
+        })
+        res.status(200).json({
+            status: true,
+            count,
+        });
+    } catch (err) {
+        res.send(500).json({
+            status: false,
+            message: err.message,
+        })
+    }
+}
 module.exports = {
     sendMessage,
-    getMessage
+    getMessage,
+    markMessageAsRead,
+    markMessageAsDelivered,
+    getUnreadMessageCount
 }
