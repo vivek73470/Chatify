@@ -9,7 +9,7 @@ const ChatLayout = ({ onlineUsers }) => {
   const [selectedUser, setSelectedUser] = useState(null);
 
   return (
-    <Box sx={{ display: "flex", height: "100vh" }}>
+    <Box sx={{ display: "flex",width:'100%' }}>
       {isMobile ? (
         <Drawer open={!selectedUser} variant="temporary">
           <Sidebar onSelectUser={setSelectedUser} onlineUsers={onlineUsers} />

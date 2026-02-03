@@ -75,7 +75,8 @@ const Login = () => {
 
   return (
     <>
-      <Box sx={{display:'flex', alignItems:'center',justifyContent:'center',height:'100%'}}>
+      <Box>
+
         <Container maxWidth="sm">
           <Paper
             elevation={8}
