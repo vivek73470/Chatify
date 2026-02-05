@@ -14,6 +14,9 @@ export default function messageHandlers(io, socket, onlineUsers) {
         from: message.sender,
       });
 
+      io.to(receiverSocketId).emit("sidebarUpdated");
+      socket.emit("sidebarUpdated");
+
       // Notify sender that message was delivered
       socket.emit("messageStatusUpdate", {
         messageId: message._id,
