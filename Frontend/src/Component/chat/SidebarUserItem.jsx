@@ -18,7 +18,7 @@ const SidebarUserItem = ({ user, index, onlineUsers, onSelectUser }) => {
     const unreadCount = unreadData?.count || 0;
 
     const isOnline = onlineUsers.includes(user._id);
-
+    console.log(user, 'fd')
     return (
         <ListItemButton
             onClick={() => onSelectUser(user)}
@@ -69,7 +69,7 @@ const SidebarUserItem = ({ user, index, onlineUsers, onSelectUser }) => {
                         {user.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
-                        {formatTime(user.lastSeen)}
+                        {formatTime(user?.lastMessageTime)}
                     </Typography>
                 </Box>
 

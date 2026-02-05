@@ -1,17 +1,29 @@
 export const formatTime = (date) => {
+    if (!date) return "";
+
     const messageDate = new Date(date);
     const today = new Date();
     const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setDate(today.getDate() - 1);
 
     if (messageDate.toDateString() === today.toDateString()) {
-        return messageDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    } else if (messageDate.toDateString() === yesterday.toDateString()) {
-        return 'Yesterday';
-    } else {
-        return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return messageDate.toLocaleTimeString(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        });
     }
+
+    if (messageDate.toDateString() === yesterday.toDateString()) {
+        return "Yesterday";
+    }
+
+    return messageDate.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+    });
 };
+
 
 export const getInitials = (name) => {
     return name

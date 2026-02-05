@@ -70,6 +70,11 @@ export const onUserCameOnline = (callback) => {
   socket.on("userCameOnline", callback);
 };
 
+export const onUnreadCountMessage = (callback) => {
+  const socket = initSocket();
+  socket.on("unreadCountChanged", callback)
+};
+
 
 // export const getSocket = () => socket;
 

@@ -19,9 +19,13 @@ import PersonOutline from "@mui/icons-material/PersonOutline";
 import Logout from "@mui/icons-material/Logout";
 import { useLogout } from "../../Utils/logout";
 import SidebarUserItem from "./SidebarUserItem";
+import { useDispatch } from "react-redux";
+import { initSocket, onUnreadCountMessage } from "../../socket/socket";
+import { chatApi } from "../../services/chatService";
 
 
 const Sidebar = ({ onSelectUser, onlineUsers }) => {
+    const dispatch = useDispatch();
     const [search, setSearch] = useState("");
     const [debounceSearch, setDebounceSearch] = useState("");
     const [open, setOpen] = useState(false);
@@ -52,6 +56,22 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        onUnreadCountMessage(({ from }) => {
+            dispatch(
+                chatApi.util.invalidateTags([
+                    { type: "UnreadCount", id: from },
+                ])
+            );
+        });
+
+        return () => {
+            const socket = initSocket();
+            socket.off("unreadCountChanged");
+        };
+    }, []);
+
 
     return (
         <>
@@ -189,7 +209,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                     </Box>
                 ) : (
                     <List sx={{ overflowY: "auto", px: 1 }}>
-                        {data.data.map((user, index) => (
+                        {data?.data?.map((user, index) => (
                             <SidebarUserItem
                                 key={user._id}
                                 user={user}
