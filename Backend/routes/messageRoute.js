@@ -8,6 +8,6 @@ messageRouter.post('/send', authenticate, sendMessage);
 messageRouter.get('/get/:id', authenticate, getMessage);
 messageRouter.put('/read/:id', authenticate, markMessageAsRead);
 messageRouter.put('/delivered/:id', authenticate, markMessageAsDelivered);
-messageRouter.get('/count/:id', authenticate, getUnreadMessageCount);
+messageRouter.get('/unread-count/:id', authenticate, getUnreadMessageCount);
 
 module.exports = messageRouter;

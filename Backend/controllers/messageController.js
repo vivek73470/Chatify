@@ -90,11 +90,10 @@ const markMessageAsDelivered = async (req, res) => {
     }
 }
 
-const getUnreadMessageCount = async (req,res) => {
+const getUnreadMessageCount = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
         const otherUserId = req.params.id;
-
         const count = await messageService.count({
             sender: otherUserId,
             receiver: loggedInUserId,
@@ -104,13 +103,15 @@ const getUnreadMessageCount = async (req,res) => {
             status: true,
             count,
         });
+
     } catch (err) {
-        res.send(500).json({
+        res.status(500).json({
             status: false,
             message: err.message,
-        })
+        });
     }
 }
+
 module.exports = {
     sendMessage,
     getMessage,

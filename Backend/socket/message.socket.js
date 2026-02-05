@@ -10,6 +10,10 @@ export default function messageHandlers(io, socket, onlineUsers) {
         status: 'delivered'
       });
 
+      io.to(receiverSocketId).emit("unreadCountChanged", {
+        from: message.sender,
+      });
+
       // Notify sender that message was delivered
       socket.emit("messageStatusUpdate", {
         messageId: message._id,
