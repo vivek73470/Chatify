@@ -52,12 +52,12 @@ export const sendReadReceipt = ({ senderId, receiverId }) => {
 
 export const onMessageStatusUpdate = (callback) => {
   const socket = initSocket();
-  socket.on("messageStatusUpdate", callback); 
+  socket.on("messageStatusUpdate", callback);
 };
 
 export const onMessageReadUpdate = (callback) => {
   const socket = initSocket();
-  socket.on("messageReadUpdate", callback); 
+  socket.on("messageReadUpdate", callback);
 };
 
 export const emitUserOnline = (userId) => {
@@ -75,6 +75,15 @@ export const onUnreadCountMessage = (callback) => {
   socket.on("unreadCountChanged", callback)
 };
 
+export const onSidebarUpdated = (callback) => {
+  const socket = initSocket();
+  socket.on("sidebarUpdated", callback)
+}
+
+export const offSidebarUpdated = () => {
+  const socket = initSocket();
+  socket.off("sidebarUpdated");
+};
 
 // export const getSocket = () => socket;
 

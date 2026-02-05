@@ -12,15 +12,14 @@ import {
     InputAdornment
 } from "@mui/material";
 import { Search, MoreVert } from "@mui/icons-material";
-import { useGetAllUsersQuery } from '../../services/userService'
-import { formatTime, getInitials } from '../../Utils/common'
+import { useGetAllUsersQuery, userApi } from '../../services/userService'
 import { useRef } from "react";
 import PersonOutline from "@mui/icons-material/PersonOutline";
 import Logout from "@mui/icons-material/Logout";
 import { useLogout } from "../../Utils/logout";
 import SidebarUserItem from "./SidebarUserItem";
 import { useDispatch } from "react-redux";
-import { initSocket, onUnreadCountMessage } from "../../socket/socket";
+import { initSocket, offSidebarUpdated, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
 import { chatApi } from "../../services/chatService";
 
 
@@ -71,6 +70,17 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
             socket.off("unreadCountChanged");
         };
     }, []);
+
+    useEffect(() => {
+        onSidebarUpdated(() => {
+            dispatch(userApi.util.invalidateTags(["Users"]));
+        });
+
+        return () => {
+            offSidebarUpdated();
+        };
+    }, []);
+
 
 
     return (

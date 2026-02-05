@@ -5,6 +5,7 @@ const BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export const userApi = createApi({
     reducerPath: 'userApi',
+    tagTypes:['Users'],
     baseQuery: baseQuery,
     endpoints: (builder) => ({
         getAllUsers: builder.query({
@@ -13,11 +14,12 @@ export const userApi = createApi({
                 method: 'GET',
                 params,
             }),
+            providesTags: ["Users"],
         }),
-        
+
     }),
 });
 
 export const {
-  useGetAllUsersQuery
+    useGetAllUsersQuery
 } = userApi;
