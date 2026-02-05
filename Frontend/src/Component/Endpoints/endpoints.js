@@ -14,6 +14,6 @@ export const endpoints = {
     getMessage: 'message/get',
     markMessageRead: 'message/read',
     markMessageDelivered: 'message/delivered',
-    unReadMessageCount: 'message/count',
+    unReadMessageCount: 'message/unread-count',
   }
 };
