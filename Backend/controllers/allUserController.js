@@ -1,44 +1,13 @@
-// const user = require('../services/authService')
-
-// const getAllUsers = async (req, res) => {
-//     try {
-//         const { search } = req.query;
-//         const loggedInUserId = req.user._id;
-
-//         let condition = {
-//             _id: {$ne: loggedInUserId}
-//         }
-//         if (search) {
-//             condition.$or = [
-//                 { name: { $regex: search, $options: 'i' } },
-//                 { number: { $regex: search, $options: 'i' } },
-//             ]
-//         }
-//         const users = await user.find(condition)
-//         res.status(200).json({
-//             status: true,
-//             data: users,
-//         });
-
-//     } catch (error) {
-//         res.status(500).json({
-//             status: false,
-//             message: 'Failed to fetch users'
-//         })
-//     }
-// }
-
-// module.exports = {
-//     getAllUsers
-// }
-
-
 const mongoose = require("mongoose");
 const User = require("../model/UserRegisterModel/usermodel");
 
 const getAllUsers = async (req, res) => {
   try {
     const loggedInUserId = new mongoose.Types.ObjectId(req.user._id);
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     const { search } = req.query;
 
     let matchStage = {
@@ -55,7 +24,14 @@ const getAllUsers = async (req, res) => {
     const users = await User.aggregate([
       { $match: matchStage },
 
-      // 🔹 find last message between logged-in user & this user
+      // sort latest chats first 
+      { $sort: { updatedAt: -1 } },
+
+      // pagination
+      { $skip: skip },
+      { $limit: limit },
+
+      // lookup last message
       {
         $lookup: {
           from: "messages",
@@ -89,7 +65,6 @@ const getAllUsers = async (req, res) => {
         },
       },
 
-      // 🔹 extract time
       {
         $addFields: {
           lastMessageTime: {
@@ -106,13 +81,19 @@ const getAllUsers = async (req, res) => {
       },
     ]);
 
-    res.status(200).json({ status: true, data: users });
+    // check if more data exists
+    const totalUsers = await User.countDocuments(matchStage);
+    const hasMore = skip + users.length < totalUsers;
+
+    res.status(200).json({
+      status: true,
+      data: users,
+      page,
+      hasMore,
+    });
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
   }
 };
 
-module.exports = {
-    getAllUsers
-}
-
+module.exports = { getAllUsers };
