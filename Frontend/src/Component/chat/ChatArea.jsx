@@ -19,9 +19,10 @@ import {
 } from "@mui/icons-material";
 import { formatMessageTime, getInitials } from '../../Utils/common'
 import { useEffect, useState } from "react";
-import { initSocket, onUserCameOnline, receiveSocketMessage, sendReadReceipt, sendSocketMessage } from "../../socket/socket";
+import { emitTypingStart, emitTypingStop, initSocket, onTypingStart, onTypingStop, onUserCameOnline, receiveSocketMessage, sendReadReceipt, sendSocketMessage } from "../../socket/socket";
 import { useGetMessageQuery, useMarkMessageAsDeliveredMutation, useMarkMessageAsReadMutation, useSendMessageMutation } from "../../services/chatService";
 import MessageTick from "../MessageTick/MessageTick";
+import { useRef } from "react";
 
 
 const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
@@ -29,6 +30,11 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const [text, setText] = useState('');
     const loggedInUser = JSON.parse(localStorage.getItem('user'))
     const isUserOnline = onlineUsers.includes(user?._id)
+
+    const [isOtherTyping, setIsOtherTyping] = useState(false);
+    const typingTimeoutRef = useRef(null);
+    const isTypingRef = useRef(false);
+
 
     const [sendMessageApi] = useSendMessageMutation();
     const [markAsReadApi] = useMarkMessageAsReadMutation();
@@ -102,6 +108,11 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
     const handleSend = async () => {
         if (!text.trim()) return;
+        emitTypingStop({
+            senderId: loggedInUser._id,
+            receiverId: user._id,
+        });
+        isTypingRef.current = false;
         try {
             const res = await sendMessageApi({
                 receiverId: user?._id,
@@ -145,6 +156,54 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             socket.off("messageStatusUpdate");
         };
     }, [loggedInUser._id]);
+
+    const handleTyping = (e) => {
+        setText(e.target.value);
+
+        // emit typing start ONCE
+        if (!isTypingRef.current) {
+            emitTypingStart({
+                senderId: loggedInUser._id,
+                receiverId: user._id,
+            });
+            isTypingRef.current = true;
+        }
+
+        // debounce typing stop
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            emitTypingStop({
+                senderId: loggedInUser._id,
+                receiverId: user._id,
+            });
+            isTypingRef.current = false;
+        }, 1500);
+    };
+
+    useEffect(() => {
+        onTypingStart(({ from }) => {
+            if (from === user?._id) {
+                setIsOtherTyping(true);
+            }
+        });
+
+        onTypingStop(({ from }) => {
+            if (from === user?._id) {
+                setIsOtherTyping(false);
+            }
+        });
+
+        return () => {
+            const socket = initSocket();
+            socket.off("typingStart");
+            socket.off("typingStop");
+        };
+    }, [user]);
+
+    const typingPlaceholder = isOtherTyping
+        ? `typing...`
+        : "Type a message...";
+
 
     if (!user) {
         return (
@@ -240,81 +299,81 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                         <CircularProgress size={24} />
                     </Box>
                 ) : (
-                 <>
-                    {messages?.map((message) => {
-                        const isMe = message.sender === loggedInUser._id;
-                        return (
-                            <Box
-                                key={message._id}
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: isMe ? "flex-end" : "flex-start",
-                                    mb: 0.5,
-                                }}
-                            >
+                    <>
+                        {messages?.map((message) => {
+                            const isMe = message.sender === loggedInUser._id;
+                            return (
                                 <Box
+                                    key={message._id}
                                     sx={{
-                                        maxWidth: '65%',
                                         display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: isMe ? 'flex-end' : 'flex-start',
+                                        justifyContent: isMe ? "flex-end" : "flex-start",
+                                        mb: 0.5,
                                     }}
                                 >
                                     <Box
                                         sx={{
-                                            bgcolor: isMe ? '#d9fdd3' : '#fff',
-                                            color: '#111',
-                                            px: 1.5,
-                                            py: 1,
-                                            borderRadius: isMe ? '8px 8px 0 8px' : '8px 8px 8px 0',
-                                            boxShadow: '0 1px 0.5px rgba(11,20,26,0.13)',
-                                            position: 'relative',
-                                            minWidth: '80px',
+                                            maxWidth: '65%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: isMe ? 'flex-end' : 'flex-start',
                                         }}
                                     >
-                                        <Typography 
-                                            fontSize="0.94rem" 
-                                            sx={{ 
-                                                pr: isMe ? 7 : 0,
-                                                pb: 0.5,
-                                                lineHeight: 1.4,
-                                                whiteSpace: 'pre-wrap',
-                                                wordBreak: 'break-word',
-                                            }}
-                                        >
-                                            {message.text}
-                                        </Typography>
-                                        
                                         <Box
                                             sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 0.5,
-                                                justifyContent: 'flex-end',
+                                                bgcolor: isMe ? '#d9fdd3' : '#fff',
+                                                color: '#111',
+                                                px: 1.5,
+                                                py: 1,
+                                                borderRadius: isMe ? '8px 8px 0 8px' : '8px 8px 8px 0',
+                                                boxShadow: '0 1px 0.5px rgba(11,20,26,0.13)',
+                                                position: 'relative',
+                                                minWidth: '80px',
                                             }}
                                         >
                                             <Typography
-                                                variant="caption"
+                                                fontSize="0.94rem"
                                                 sx={{
-                                                    fontSize: '0.68rem',
-                                                    color: 'rgba(0,0,0,0.45)',
-                                                    lineHeight: 1,
+                                                    pr: isMe ? 7 : 0,
+                                                    pb: 0.5,
+                                                    lineHeight: 1.4,
+                                                    whiteSpace: 'pre-wrap',
+                                                    wordBreak: 'break-word',
                                                 }}
                                             >
-                                                {formatMessageTime(message.createdAt)}
+                                                {message.text}
                                             </Typography>
-                                            
-                                            <MessageTick
-                                                isMe={isMe}
-                                                status={message.status}
-                                            />
+
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.5,
+                                                    justifyContent: 'flex-end',
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        fontSize: '0.68rem',
+                                                        color: 'rgba(0,0,0,0.45)',
+                                                        lineHeight: 1,
+                                                    }}
+                                                >
+                                                    {formatMessageTime(message.createdAt)}
+                                                </Typography>
+
+                                                <MessageTick
+                                                    isMe={isMe}
+                                                    status={message.status}
+                                                />
+                                            </Box>
                                         </Box>
                                     </Box>
                                 </Box>
-                            </Box>
-                        )
-                    })}
-                </>
+                            )
+                        })}
+                    </>
                 )}
 
             </Box>
@@ -326,10 +385,10 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                     </IconButton>
                     <TextField
                         fullWidth
-                        placeholder="Type a message..."
+                        placeholder={typingPlaceholder}
                         size="small"
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        onChange={handleTyping}
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
@@ -340,6 +399,11 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                             ),
                         }}
                         sx={{
+                            '& .MuiInputBase-input::placeholder': {
+                                color: isOtherTyping ? '#2196F3' : '#9e9e9e', 
+                                opacity: 1,
+                                fontStyle: isOtherTyping ? 'italic' : 'normal',
+                            },
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 3,
                                 bgcolor: '#f5f5f5',

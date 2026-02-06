@@ -85,6 +85,26 @@ export const offSidebarUpdated = () => {
   socket.off("sidebarUpdated");
 };
 
+export const emitTypingStart = ({ senderId, receiverId }) => {
+  const socket = initSocket();
+  socket.emit("typingStart", { senderId, receiverId })
+}
+
+export const emitTypingStop = ({ senderId, receiverId }) => {
+  const socket = initSocket();
+  socket.emit("typingStop", { senderId, receiverId })
+}
+
+export const onTypingStart = (callback) => {
+  const socket = initSocket();
+  socket.on("typingStart", callback);
+};
+
+export const onTypingStop = (callback) => {
+  const socket = initSocket();
+  socket.on("typingStop", callback);
+};
+
 // export const getSocket = () => socket;
 
 
