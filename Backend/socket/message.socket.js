@@ -41,4 +41,25 @@ export default function messageHandlers(io, socket, onlineUsers) {
       });
     }
   });
+
+  // TYPING START
+  socket.on("typingStart", ({ senderId, receiverId }) => {
+    const receiverSocketId = onlineUsers.get(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("typingStart", {
+        from: senderId,
+      });
+    }
+  });
+
+  // TYPING STOP
+  socket.on("typingStop", ({ senderId, receiverId }) => {
+    const receiverSocketId = onlineUsers.get(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("typingStop", {
+        from: senderId,
+      });
+    }
+  });
+
 }

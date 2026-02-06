@@ -7,7 +7,7 @@ export const initSocket = (io) => {
     const onlineUsers = new Map();
 
     // io.on("connection") is just a listener
-    // it does not run immediately - run only when frontend calls
+    // it does not run immediately - Triggered when a client connects
     io.on("connection", (socket) => {
         console.log("Socket connected:", socket.id);
 

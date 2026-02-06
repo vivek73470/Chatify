@@ -1,6 +1,7 @@
 export default function registerUserHandlers(io, socket, onlineUsers) {
   socket.on("addUser", (userId) => {
     onlineUsers.set(userId, socket.id);
+    // Send event to all connected clients
     io.emit("getOnlineUsers", Array.from(onlineUsers.keys()));
   });
 
