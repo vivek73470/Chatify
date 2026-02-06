@@ -21,11 +21,12 @@ import SidebarUserItem from "./SidebarUserItem";
 import { useDispatch } from "react-redux";
 import { initSocket, offSidebarUpdated, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
 import { chatApi } from "../../services/chatService";
+import { getInitials } from "../../Utils/common";
 
 
 const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const dispatch = useDispatch();
-
+    const user = JSON.parse(localStorage.getItem("user"));
     const [page, setPage] = useState(1);
     const [users, setUsers] = useState([]);
     const [hasMore, setHasMore] = useState(true);
@@ -112,7 +113,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                     display: "flex",
                     flexDirection: "column",
                     width: "360px",
-                     height: "100vh", 
+                    height: "100vh",
                     scrollbarGutter: "stable",
                     "@media (max-width:900px)": {
                         width: "100%",
@@ -122,11 +123,11 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                 <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0ff', color: '#000' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar sx={{ width: 42, height: 42, bgcolor: '#2196F3', fontSize: '1.2rem' }}>
-                            U
+                            {getInitials(user?.name)}
                         </Avatar>
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h6" fontWeight={600}>Chatify</Typography>
-                            {/* <Typography variant="caption" color="text.secondary">User</Typography> */}
+                            <Typography variant="caption" color="text.secondary">{user?.name}</Typography>
                         </Box>
                     </Box>
                     <Box sx={{ position: 'relative' }}>
@@ -251,7 +252,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                 setPage((prev) => prev + 1);
                             }
                         }}
-                        sx={{ overflowY: "auto", px: 1,flex:1 }}
+                        sx={{ overflowY: "auto", px: 1, flex: 1 }}
                     >
                         {users.map((user, index) => (
                             <SidebarUserItem
