@@ -24,13 +24,6 @@ const getAllUsers = async (req, res) => {
     const users = await User.aggregate([
       { $match: matchStage },
 
-      // sort latest chats first 
-      { $sort: { updatedAt: -1 } },
-
-      // pagination
-      { $skip: skip },
-      { $limit: limit },
-
       // lookup last message
       {
         $lookup: {
@@ -65,13 +58,21 @@ const getAllUsers = async (req, res) => {
         },
       },
 
+      // extract last message time
       {
         $addFields: {
           lastMessageTime: {
-            $arrayElemAt: ["$lastMessage.createdAt", 0],
+            $ifNull: [{ $arrayElemAt: ["$lastMessage.createdAt", 0] }, new Date(0)],
           },
         },
       },
+
+      // ✅ NOW sort by last message time
+      { $sort: { lastMessageTime: -1 } },
+
+      // pagination AFTER sorting
+      { $skip: skip },
+      { $limit: limit },
 
       {
         $project: {
@@ -80,6 +81,7 @@ const getAllUsers = async (req, res) => {
         },
       },
     ]);
+
 
     // check if more data exists
     const totalUsers = await User.countDocuments(matchStage);
