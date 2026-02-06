@@ -205,7 +205,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     }, [user]);
 
     const typingPlaceholder = isOtherTyping
-        ? `typing...`
+        ? `${user.name} typing...`
         : "Type a message...";
 
     const handleEmojiClick = (emojiData) => {
@@ -452,6 +452,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                         }}
                     />
                     <IconButton
+                        disabled={!text}
                         onClick={handleSend}
                         sx={{
                             bgcolor: '#2196F3',

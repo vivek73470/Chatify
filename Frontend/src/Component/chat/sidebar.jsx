@@ -25,6 +25,12 @@ import { chatApi } from "../../services/chatService";
 
 const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const dispatch = useDispatch();
+
+    const [page, setPage] = useState(1);
+    const [users, setUsers] = useState([]);
+    const [hasMore, setHasMore] = useState(true);
+
+
     const [search, setSearch] = useState("");
     const [debounceSearch, setDebounceSearch] = useState("");
     const [open, setOpen] = useState(false);
@@ -32,12 +38,18 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const buttonRef = useRef();
     const logout = useLogout();
 
-    const { data, isLoading } = useGetAllUsersQuery({
+    const { data, isLoading, isFetching } = useGetAllUsersQuery({
+        page,
+        limit: 10,
         search: debounceSearch,
     });
 
     useEffect(() => {
-        const handler = setTimeout(() => setDebounceSearch(search), 500);
+        const handler = setTimeout(() => {
+            setDebounceSearch(search)
+            setPage(1);
+            setHasMore(true);
+        }, 500);
         return () => clearTimeout(handler);
     }, [search]);
 
@@ -81,6 +93,14 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
         };
     }, []);
 
+    useEffect(() => {
+        if (data?.data) {
+            setUsers((prev) =>
+                page === 1 ? data.data : [...prev, ...data.data]
+            );
+            setHasMore(data.hasMore);
+        }
+    }, [data]);
 
 
     return (
@@ -92,6 +112,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                     display: "flex",
                     flexDirection: "column",
                     width: "360px",
+                     height: "100vh", 
                     scrollbarGutter: "stable",
                     "@media (max-width:900px)": {
                         width: "100%",
@@ -207,19 +228,32 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                     />
                 </Box>
 
-                {isLoading ? (
+                {isLoading && page === 1 ? (
                     <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                         <CircularProgress size={24} />
                     </Box>
-                ) : data?.data?.length === 0 ? (
+                ) : users.length === 0 ? (
                     <Box sx={{ textAlign: "center", mt: 4 }}>
                         <Typography color="text.secondary">
                             No users found
                         </Typography>
                     </Box>
                 ) : (
-                    <List sx={{ overflowY: "auto", px: 1 }}>
-                        {data?.data?.map((user, index) => (
+                    <List
+                        onScroll={(e) => {
+                            const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
+                            if (
+                                scrollHeight - scrollTop <= clientHeight + 50 &&
+                                hasMore &&
+                                !isFetching
+                            ) {
+                                setPage((prev) => prev + 1);
+                            }
+                        }}
+                        sx={{ overflowY: "auto", px: 1,flex:1 }}
+                    >
+                        {users.map((user, index) => (
                             <SidebarUserItem
                                 key={user._id}
                                 user={user}
@@ -228,9 +262,18 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                 onSelectUser={onSelectUser}
                             />
                         ))}
+
+                        {isFetching && (
+                            <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
+                                <CircularProgress size={20} />
+                            </Box>
+                        )}
                     </List>
+
                 )
                 }
+
+
             </Box >
 
         </>
