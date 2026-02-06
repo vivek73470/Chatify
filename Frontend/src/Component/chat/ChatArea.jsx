@@ -5,7 +5,8 @@ import {
     TextField,
     Avatar,
     InputAdornment,
-    CircularProgress
+    CircularProgress,
+    ClickAwayListener
 } from "@mui/material";
 import {
     ArrowBack,
@@ -17,6 +18,7 @@ import {
     Send,
     ChatBubbleOutline
 } from "@mui/icons-material";
+import EmojiPicker from "emoji-picker-react";
 import { formatMessageTime, getInitials } from '../../Utils/common'
 import { useEffect, useState } from "react";
 import { emitTypingStart, emitTypingStop, initSocket, onTypingStart, onTypingStop, onUserCameOnline, receiveSocketMessage, sendReadReceipt, sendSocketMessage } from "../../socket/socket";
@@ -28,6 +30,8 @@ import { useRef } from "react";
 const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
+    const [showEmoji, setShowEmoji] = useState(false);
+
     const loggedInUser = JSON.parse(localStorage.getItem('user'))
     const isUserOnline = onlineUsers.includes(user?._id)
 
@@ -204,6 +208,10 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         ? `typing...`
         : "Type a message...";
 
+    const handleEmojiClick = (emojiData) => {
+        setText((prev) => prev + emojiData.emoji)
+    }
+
 
     if (!user) {
         return (
@@ -378,6 +386,26 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
             </Box>
 
+            {showEmoji && (
+                <ClickAwayListener onClickAway={() => setShowEmoji(false)}>
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            bottom: 70,
+                            right: 4,
+                            zIndex: 10,
+                        }}
+                    >
+                        <EmojiPicker
+                            onEmojiClick={handleEmojiClick}
+                            height={350}
+                            width={300}
+                        />
+                    </Box>
+                </ClickAwayListener>
+            )}
+
+
             <Box sx={{ p: 2, bgcolor: '#fff', borderTop: '1px solid #e0e0e0' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <IconButton size="small">
@@ -392,15 +420,19 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <IconButton size="small">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setShowEmoji((prev) => !prev)}
+                                    >
                                         <EmojiEmotions />
                                     </IconButton>
+
                                 </InputAdornment>
                             ),
                         }}
                         sx={{
                             '& .MuiInputBase-input::placeholder': {
-                                color: isOtherTyping ? '#2196F3' : '#9e9e9e', 
+                                color: isOtherTyping ? '#2196F3' : '#9e9e9e',
                                 opacity: 1,
                                 fontStyle: isOtherTyping ? 'italic' : 'normal',
                             },
