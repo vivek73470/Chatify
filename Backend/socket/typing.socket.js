@@ -1,9 +1,26 @@
-export default function typingHandlers(io, socket) {
-  socket.on("typing", ({ receiverId }) => {
-    socket.to(receiverId).emit("userTyping");
+export default function typingHandlers(io, socket, onlineUsers) {
+
+  socket.on("typingStart", ({ senderId, receiverId }) => {
+    const receiverSockets = onlineUsers.get(receiverId);
+
+    if (!receiverSockets) return;
+
+    receiverSockets.forEach((socketId) => {
+      io.to(socketId).emit("typingStart", {
+        from: senderId,
+      });
+    });
   });
 
-  socket.on("stopTyping", ({ receiverId }) => {
-    socket.to(receiverId).emit("stopTyping");
+  socket.on("typingStop", ({ senderId, receiverId }) => {
+    const receiverSockets = onlineUsers.get(receiverId);
+
+    if (!receiverSockets) return;
+
+    receiverSockets.forEach((socketId) => {
+      io.to(socketId).emit("typingStop", {
+        from: senderId,
+      });
+    });
   });
 }

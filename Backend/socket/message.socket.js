@@ -1,23 +1,23 @@
-
 export default function messageHandlers(io, socket, onlineUsers) {
 
-  // SEND MESSAGE 
   socket.on("sendMessage", (message) => {
-    const receiverSocketId = onlineUsers.get(message.receiver);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("receiveMessage", {
-        ...message,
-        status: 'delivered'
+    const receiverSockets = onlineUsers.get(message.receiver);
+
+    if (receiverSockets) {
+      receiverSockets.forEach((sid) => {
+        io.to(sid).emit("receiveMessage", {
+          ...message,
+          status: "delivered",
+        });
+
+        io.to(sid).emit("unreadCountChanged", {
+          from: message.sender,
+        });
+
+        io.to(sid).emit("sidebarUpdated");
       });
 
-      io.to(receiverSocketId).emit("unreadCountChanged", {
-        from: message.sender,
-      });
-
-      io.to(receiverSocketId).emit("sidebarUpdated");
-      socket.emit("sidebarUpdated");
-
-      // Notify sender that message was delivered
+      // sender delivery confirmation
       socket.emit("messageStatusUpdate", {
         messageId: message._id,
         status: "delivered",
@@ -25,41 +25,18 @@ export default function messageHandlers(io, socket, onlineUsers) {
     }
   });
 
-  // When user comes online, notify all users who sent them messages
-  socket.on("userOnline", ({ userId }) => {
-    // all connected users that this user is now online & They mark their sent messages as delivered
-    socket.broadcast.emit("userCameOnline", { userId });
-  });
-
-  // MARK AS READ when user opens specific chat
   socket.on("messageRead", ({ senderId, receiverId }) => {
-    const senderSocketId = onlineUsers.get(senderId);
-    if (senderSocketId) {
-      io.to(senderSocketId).emit("messageReadUpdate", {
-        receiverId,
-        status: "read",
+    const senderSockets = onlineUsers.get(senderId);
+
+    if (senderSockets) {
+      senderSockets.forEach((sid) => {
+        io.to(sid).emit("messageReadUpdate", {
+          receiverId,
+          status: "read",
+        });
       });
     }
   });
-
-  // TYPING START
-  socket.on("typingStart", ({ senderId, receiverId }) => {
-    const receiverSocketId = onlineUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("typingStart", {
-        from: senderId,
-      });
-    }
-  });
-
-  // TYPING STOP
-  socket.on("typingStop", ({ senderId, receiverId }) => {
-    const receiverSocketId = onlineUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("typingStop", {
-        from: senderId,
-      });
-    }
-  });
-
 }
+
+

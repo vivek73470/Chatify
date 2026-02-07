@@ -13,7 +13,7 @@ export const initSocket = (io) => {
 
         registerUserHandlers(io, socket, onlineUsers);
         messageHandlers(io, socket, onlineUsers);
-        typingHandlers(io, socket);
+        typingHandlers(io, socket,onlineUsers);
     });
 }
 
