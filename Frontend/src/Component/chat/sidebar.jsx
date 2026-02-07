@@ -3,11 +3,9 @@ import {
     Box,
     TextField,
     List,
-    ListItemButton,
     Typography,
     CircularProgress,
     Avatar,
-    Badge,
     IconButton,
     InputAdornment
 } from "@mui/material";
@@ -19,7 +17,7 @@ import Logout from "@mui/icons-material/Logout";
 import { useLogout } from "../../Utils/logout";
 import SidebarUserItem from "./SidebarUserItem";
 import { useDispatch } from "react-redux";
-import { initSocket, offSidebarUpdated, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
+import { offSidebarUpdated, offUnreadCountMessage, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
 import { chatApi } from "../../services/chatService";
 import { getInitials } from "../../Utils/common";
 
@@ -79,8 +77,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
         });
 
         return () => {
-            const socket = initSocket();
-            socket.off("unreadCountChanged");
+          offUnreadCountMessage();
         };
     }, []);
 

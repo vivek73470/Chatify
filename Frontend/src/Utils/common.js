@@ -26,12 +26,7 @@ export const formatTime = (date) => {
 
 
 export const getInitials = (name) => {
-    return name
-        .split(' ')
-        .map(word => word[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
+    return name?.split(' ')?.map(word => word[0])?.join('')?.toUpperCase()?.slice(0, 2);
 };
 
 export const formatMessageTime = (date) => {

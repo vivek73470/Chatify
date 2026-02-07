@@ -21,7 +21,11 @@ import {
 import EmojiPicker from "emoji-picker-react";
 import { formatMessageTime, getInitials } from '../../Utils/common'
 import { useEffect, useState } from "react";
-import { emitTypingStart, emitTypingStop, initSocket, onTypingStart, onTypingStop, onUserCameOnline, receiveSocketMessage, sendReadReceipt, sendSocketMessage } from "../../socket/socket";
+import {
+    emitTypingStart, emitTypingStop, onTypingStart, onTypingStop,
+    onReceiveMessage, sendReadReceipt, sendSocketMessage, offTypingStart,
+    offTypingStop, onMessageReadUpdate, onMessageStatusUpdate, offReceiveSocketMessage, offMessageReadUpdate, offMessageStatusUpdate
+} from "../../socket/socket";
 import { useGetMessageQuery, useMarkMessageAsDeliveredMutation, useMarkMessageAsReadMutation, useSendMessageMutation } from "../../services/chatService";
 import MessageTick from "../MessageTick/MessageTick";
 import { useRef } from "react";
@@ -56,46 +60,30 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
     // RECEIVE MESSAGE & AUTO-MARK AS READ
     useEffect(() => {
-        receiveSocketMessage((message) => {
+        onReceiveMessage((message) => {
             const isCurrentChat =
                 message.sender === user?._id ||
                 message.receiver === user?._id;
 
-            if (isCurrentChat) {
-                setMessages(prev => [...prev, message]);
+            if (!isCurrentChat) return;
 
-                if (message.sender === user?._id) {
-                    markAsReadApi(user?._id);
-                    sendReadReceipt({
-                        senderId: user?._id,
-                        receiverId: loggedInUser?._id,
-                    });
-                }
+            setMessages((prev) => [...prev, message]);
+
+            if (message.sender === user?._id) {
+                markAsReadApi(user._id);
+                sendReadReceipt({
+                    senderId: user._id,
+                    receiverId: loggedInUser._id,
+                });
             }
         });
-    }, [user, loggedInUser._id, markAsReadApi]);
 
-    //  Listen for when the chat user comes online
-    useEffect(() => {
-        onUserCameOnline(async ({ userId }) => {
-            // If this is the user we're chatting with
-            if (userId === user?._id) {
-                // Mark all "sent" messages to this user as "delivered"
-                await markAsDeliveredApi(user._id);
+        return () => {
+            offReceiveSocketMessage();
+        };
+    }, [user?._id]);
 
-                // Update local state
-                setMessages((prev) =>
-                    prev.map((msg) =>
-                        msg.receiver === userId &&
-                            msg.sender === loggedInUser._id &&
-                            msg.status === "sent"
-                            ? { ...msg, status: "delivered" }
-                            : msg
-                    )
-                );
-            }
-        });
-    }, [user, loggedInUser._id, markAsDeliveredApi]);
+
 
     // Mark messages as READ when opening chat
     useEffect(() => {
@@ -133,21 +121,18 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     }
 
     useEffect(() => {
-        const socket = initSocket();
-
-        // For read status (blue ticks)
-        socket.on("messageReadUpdate", ({ receiverId }) => {
+        onMessageReadUpdate(({ receiverId }) => {
             setMessages((prev) =>
                 prev.map((msg) =>
-                    msg.receiver === receiverId && msg.sender === loggedInUser._id
+                    msg.receiver === receiverId &&
+                        msg.sender === loggedInUser._id
                         ? { ...msg, status: "read" }
                         : msg
                 )
             );
         });
 
-        // For delivered status (double gray ticks)
-        socket.on("messageStatusUpdate", ({ messageId, status }) => {
+        onMessageStatusUpdate(({ messageId, status }) => {
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg._id === messageId ? { ...msg, status } : msg
@@ -156,10 +141,12 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         });
 
         return () => {
-            socket.off("messageReadUpdate");
-            socket.off("messageStatusUpdate");
+            offMessageReadUpdate();
+            offMessageStatusUpdate();
         };
     }, [loggedInUser._id]);
+
+
 
     const handleTyping = (e) => {
         setText(e.target.value);
@@ -198,11 +185,12 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         });
 
         return () => {
-            const socket = initSocket();
-            socket.off("typingStart");
-            socket.off("typingStop");
+            offTypingStart();
+            offTypingStop();
         };
-    }, [user]);
+    }, [user?._id]);
+
+
 
     const typingPlaceholder = isOtherTyping
         ? `${user.name} typing...`
