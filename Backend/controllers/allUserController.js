@@ -52,7 +52,7 @@ const getAllUsers = async (req, res) => {
             },
             { $sort: { createdAt: -1 } },
             { $limit: 1 },
-            { $project: { createdAt: 1 } },
+            { $project: { createdAt: 1, text: 1, sender: 1 } },
           ],
           as: "lastMessage",
         },
@@ -64,13 +64,18 @@ const getAllUsers = async (req, res) => {
           lastMessageTime: {
             $ifNull: [{ $arrayElemAt: ["$lastMessage.createdAt", 0] }, new Date(0)],
           },
+          lastMessageText: {
+            $ifNull: [{ $arrayElemAt: ["$lastMessage.text", 0] }, ""],
+          },
+          lastMessageSender: {
+            $ifNull: [{ $arrayElemAt: ["$lastMessage.sender", 0] }, null],
+          },
         },
       },
 
-      // ✅ NOW sort by last message time
+      // NOW sort by last message time
       { $sort: { lastMessageTime: -1 } },
 
-      // pagination AFTER sorting
       { $skip: skip },
       { $limit: limit },
 

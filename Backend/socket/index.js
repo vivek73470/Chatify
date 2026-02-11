@@ -5,15 +5,15 @@ import typingHandlers from "./typing.socket.js";
 
 export const initSocket = (io) => {
     const onlineUsers = new Map();
+    const activeChats = new Map();
 
     // this runs immediately when io()(initSocket fn) connects from frontend and happens befor connectUser()
     io.on("connection", (socket) => {
         console.log("Socket connected:", socket.id);
 
-        registerUserHandlers(io, socket, onlineUsers);
-        messageHandlers(io, socket, onlineUsers);
-        typingHandlers(io, socket,onlineUsers);
+        registerUserHandlers(io, socket, onlineUsers, activeChats);
+        messageHandlers(io, socket, onlineUsers, activeChats);
+        typingHandlers(io, socket, onlineUsers);
     });
 }
-
 
