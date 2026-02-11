@@ -13,7 +13,6 @@ export const endpoints = {
     sendMessage: 'message/send',
     getMessage: 'message/get',
     markMessageRead: 'message/read',
-    markMessageDelivered: 'message/delivered',
     unReadMessageCount: 'message/unread-count',
   }
 };

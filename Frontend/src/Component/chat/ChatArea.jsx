@@ -24,9 +24,10 @@ import { useEffect, useState } from "react";
 import {
     emitTypingStart, emitTypingStop, onTypingStart, onTypingStop,
     onReceiveMessage, sendReadReceipt, sendSocketMessage, offTypingStart,
-    offTypingStop, onMessageReadUpdate, onMessageStatusUpdate, offReceiveSocketMessage, offMessageReadUpdate, offMessageStatusUpdate
+    offTypingStop, onMessageReadUpdate, onMessageStatusUpdate, offReceiveSocketMessage, offMessageReadUpdate, offMessageStatusUpdate,
+    openChat, closeChat, onMessageStatusBulkUpdate, offMessageStatusBulkUpdate
 } from "../../socket/socket";
-import { useGetMessageQuery, useMarkMessageAsDeliveredMutation, useMarkMessageAsReadMutation, useSendMessageMutation } from "../../services/chatService";
+import { useGetMessageQuery, useMarkMessageAsReadMutation, useSendMessageMutation } from "../../services/chatService";
 import MessageTick from "../MessageTick/MessageTick";
 import { useRef } from "react";
 
@@ -46,10 +47,9 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
     const [sendMessageApi] = useSendMessageMutation();
     const [markAsReadApi] = useMarkMessageAsReadMutation();
-    const [markAsDeliveredApi] = useMarkMessageAsDeliveredMutation();
     const { data, isLoading } = useGetMessageQuery(
         user?._id,
-        { skip: !user }
+        { skip: !user, refetchOnMountOrArgChange: true }
     );
 
     useEffect(() => {
@@ -98,6 +98,19 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         markRead();
     }, [user]);
 
+    useEffect(() => {
+        if (!user?._id || !loggedInUser?._id) return;
+
+        openChat({
+            userId: loggedInUser._id,
+            withUserId: user._id,
+        });
+
+        return () => {
+            closeChat();
+        };
+    }, [user?._id, loggedInUser?._id]);
+
     const handleSend = async () => {
         if (!text.trim()) return;
         emitTypingStop({
@@ -109,10 +122,12 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             const res = await sendMessageApi({
                 receiverId: user?._id,
                 text
-            })
-            // emit by socket
-            sendSocketMessage(res?.data?.data)
-            setMessages((prev) => [...prev, res.data?.data]);
+            });
+            const newMessage = res?.data?.data;
+            if (!newMessage?._id) return;
+            setMessages((prev) => [...prev, newMessage]);
+            // Emit after local insert so status updates can patch this message reliably.
+            sendSocketMessage(newMessage);
             setText("");
 
         } catch (err) {
@@ -140,9 +155,21 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             );
         });
 
+        onMessageStatusBulkUpdate(({ messageIds, status }) => {
+            if (!Array.isArray(messageIds) || messageIds.length === 0) return;
+
+            const idSet = new Set(messageIds);
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    idSet.has(msg._id) ? { ...msg, status } : msg
+                )
+            );
+        });
+
         return () => {
             offMessageReadUpdate();
             offMessageStatusUpdate();
+            offMessageStatusBulkUpdate();
         };
     }, [loggedInUser._id]);
 

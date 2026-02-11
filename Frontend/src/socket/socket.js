@@ -4,7 +4,7 @@ const BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 let socket = null;
 
-//  Create socket ONCE & Reuse everywhere &  No race conditions
+// Create socket ONCE & Reuse everywhere &  No race conditions
 // Opens a WebSocket connection to the server
 export const initSocket = () => {
   if (!socket) {
@@ -23,7 +23,7 @@ export const initSocket = () => {
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("🔌 Socket disconnected:", reason);
+      console.log("Socket disconnected:", reason);
     });
 
     socket.on("connect_error", (err) => {
@@ -59,7 +59,8 @@ export const offOnlineUsers = () => {
 /* ---------------- MESSAGES ---------------- */
 
 export const sendSocketMessage = (message) => {
-  socket?.emit("sendMessage", message);
+  const socket = initSocket();
+  socket.emit("sendMessage", message);
 };
 
 export const onReceiveMessage = (callback) => {
@@ -73,7 +74,8 @@ export const offReceiveSocketMessage = () => {
 /* ---------------- READ / STATUS ---------------- */
 
 export const sendReadReceipt = ({ senderId, receiverId }) => {
-  socket?.emit("messageRead", { senderId, receiverId });
+  const socket = initSocket();
+  socket.emit("messageRead", { senderId, receiverId });
 
 }
 
@@ -96,6 +98,7 @@ export const offMessageReadUpdate = () => {
 /* ---------------- SIDEBAR / COUNTS ---------------- */
 
 export const onUnreadCountMessage = (callback) => {
+  const socket = initSocket();
   socket.on("unreadCountChanged", callback)
 };
 
@@ -104,7 +107,8 @@ export const offUnreadCountMessage = () => {
 };
 
 export const onSidebarUpdated = (callback) => {
-  socket?.on("sidebarUpdated", callback)
+  const socket = initSocket();
+  socket.on("sidebarUpdated", callback)
 }
 
 export const offSidebarUpdated = () => {
@@ -137,6 +141,24 @@ export const offTypingStop = () => {
   socket?.off("typingStop");
 };
 
+/* ---------------- ACTIVE CHAT ---------------- */
+export const openChat = ({ userId, withUserId }) => {
+  const socket = initSocket();
+  socket.emit("openChat", { userId, withUserId });
+};
 
+export const closeChat = () => {
+  socket?.emit("closeChat");
+};
+
+/* ---------------- BULK STATUS ---------------- */
+export const onMessageStatusBulkUpdate = (callback) => {
+  const socket = initSocket();
+  socket.on("messageStatusBulkUpdate", callback);
+};
+
+export const offMessageStatusBulkUpdate = () => {
+  socket?.off("messageStatusBulkUpdate");
+};
 
 

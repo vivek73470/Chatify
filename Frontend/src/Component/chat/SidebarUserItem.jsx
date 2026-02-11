@@ -16,9 +16,14 @@ const getAvatarColor = (index) => {
 const SidebarUserItem = ({ user, index, onlineUsers, onSelectUser }) => {
     const { data: unreadData } = useUnReadMessageCountQuery(user._id);
     const unreadCount = unreadData?.count || 0;
+    const loggedInUser = JSON.parse(localStorage.getItem("user"));
+    const isLastByMe = user?.lastMessageSender === loggedInUser?._id;
+    const lastMessagePreview = user?.lastMessageText
+        ? `${isLastByMe ? "You: " : ""}${user.lastMessageText}`
+        : "No messages yet";
 
     const isOnline = onlineUsers.includes(user._id);
-    console.log(user, 'fd')
+
     return (
         <ListItemButton
             onClick={() => onSelectUser(user)}
@@ -90,7 +95,7 @@ const SidebarUserItem = ({ user, index, onlineUsers, onSelectUser }) => {
                             fontSize: "0.85rem",
                         }}
                     >
-                        {user.status}
+                        {lastMessagePreview}
                     </Typography>
 
                     {unreadCount > 0 && (

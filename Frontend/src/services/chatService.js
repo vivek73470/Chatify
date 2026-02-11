@@ -30,12 +30,6 @@ export const chatApi = createApi({
                 { type: 'UnreadCount', id }
             ],
         }),
-        markMessageAsDelivered: builder.mutation({
-            query: (id) => ({
-                url: `${endpoints.message.markMessageDelivered}/${id}`,
-                method: 'PUT',
-            })
-        }),
         unReadMessageCount: builder.query({
             query: (id) => ({
                 url: `${endpoints.message.unReadMessageCount}/${id}`,
@@ -52,7 +46,6 @@ export const {
     useSendMessageMutation,
     useGetMessageQuery,
     useMarkMessageAsReadMutation,
-    useMarkMessageAsDeliveredMutation,
     useUnReadMessageCountQuery
 
 } = chatApi

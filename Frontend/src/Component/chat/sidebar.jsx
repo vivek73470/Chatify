@@ -37,11 +37,16 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const buttonRef = useRef();
     const logout = useLogout();
 
-    const { data, isLoading, isFetching } = useGetAllUsersQuery({
-        page,
-        limit: 10,
-        search: debounceSearch,
-    });
+    const { data, isLoading, isFetching, refetch } = useGetAllUsersQuery(
+        {
+            page,
+            limit: 10,
+            search: debounceSearch,
+        },
+        {
+            refetchOnMountOrArgChange: true,
+        }
+    );
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -83,13 +88,16 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
 
     useEffect(() => {
         onSidebarUpdated(() => {
+            setPage(1);
+            setHasMore(true);
+            refetch();
             dispatch(userApi.util.invalidateTags(["Users"]));
         });
 
         return () => {
             offSidebarUpdated();
         };
-    }, []);
+    }, [dispatch, refetch]);
 
     useEffect(() => {
         if (data?.data) {
