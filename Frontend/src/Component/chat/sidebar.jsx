@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Box,
     TextField,
@@ -7,17 +7,24 @@ import {
     CircularProgress,
     Avatar,
     IconButton,
-    InputAdornment
+    InputAdornment,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Checkbox,
+    FormControlLabel
 } from "@mui/material";
-import { Search, MoreVert } from "@mui/icons-material";
-import { useGetAllUsersQuery, userApi } from '../../services/userService'
+import { Search, MoreVert, GroupAdd } from "@mui/icons-material";
+import { useCreateGroupMutation, useGetAllUsersQuery, useGetMyGroupsQuery, userApi } from '../../services/userService'
 import { useRef } from "react";
 import PersonOutline from "@mui/icons-material/PersonOutline";
 import Logout from "@mui/icons-material/Logout";
 import { useLogout } from "../../Utils/logout";
 import SidebarUserItem from "./SidebarUserItem";
 import { useDispatch } from "react-redux";
-import { offSidebarUpdated, offUnreadCountMessage, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
+import { emitGroupCreated, offSidebarUpdated, offUnreadCountMessage, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
 import { chatApi } from "../../services/chatService";
 import { getInitials } from "../../Utils/common";
 
@@ -33,9 +40,13 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const [search, setSearch] = useState("");
     const [debounceSearch, setDebounceSearch] = useState("");
     const [open, setOpen] = useState(false);
+    const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+    const [groupName, setGroupName] = useState("");
+    const [selectedMembers, setSelectedMembers] = useState([]);
     const menuRef = useRef();
     const buttonRef = useRef();
     const logout = useLogout();
+    const [createGroup, { isLoading: creatingGroup }] = useCreateGroupMutation();
 
     const { data, isLoading, isFetching, refetch } = useGetAllUsersQuery(
         {
@@ -47,6 +58,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
             refetchOnMountOrArgChange: true,
         }
     );
+    const { data: groupsData, refetch: refetchGroups } = useGetMyGroupsQuery();
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -91,13 +103,14 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
             setPage(1);
             setHasMore(true);
             refetch();
-            dispatch(userApi.util.invalidateTags(["Users"]));
+            refetchGroups();
+            dispatch(userApi.util.invalidateTags(["Users", "Groups"]));
         });
 
         return () => {
             offSidebarUpdated();
         };
-    }, [dispatch, refetch]);
+    }, [dispatch, refetch, refetchGroups]);
 
     useEffect(() => {
         if (data?.data) {
@@ -107,6 +120,42 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
             setHasMore(data.hasMore);
         }
     }, [data]);
+
+    const conversations = useMemo(() => {
+        const direct = users.map((u) => ({ ...u, isGroup: false }));
+        const groups = (groupsData?.data || []).map((g) => ({ ...g, isGroup: true }));
+
+        return [...groups, ...direct].sort(
+            (a, b) => new Date(b.lastMessageTime || 0) - new Date(a.lastMessageTime || 0)
+        );
+    }, [users, groupsData?.data]);
+
+    const toggleMember = (memberId) => {
+        setSelectedMembers((prev) =>
+            prev.includes(memberId)
+                ? prev.filter((id) => id !== memberId)
+                : [...prev, memberId]
+        );
+    };
+
+    const handleCreateGroup = async () => {
+        if (!groupName.trim() || selectedMembers.length === 0) return;
+
+        try {
+            const created = await createGroup({
+                name: groupName.trim(),
+                members: selectedMembers,
+            }).unwrap();
+            emitGroupCreated((created?.data?.members || []).map((member) => member._id));
+
+            setGroupDialogOpen(false);
+            setGroupName("");
+            setSelectedMembers([]);
+            refetchGroups();
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
 
     return (
@@ -158,6 +207,25 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                     overflow: "hidden",
                                 }}
                             >
+                                <Box
+                                    onClick={() => {
+                                        setOpen(false);
+                                        setGroupDialogOpen(true);
+                                    }}
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1.5,
+                                        px: 2,
+                                        py: 0.8,
+                                        cursor: "pointer",
+                                        "&:hover": { bgcolor: "#f5f5f5" },
+                                    }}
+                                >
+                                    <GroupAdd fontSize="small" />
+                                    <Typography fontSize={14}>New Group</Typography>
+                                </Box>
+
                                 <Box
                                     onClick={() => {
                                         setOpen(false);
@@ -239,7 +307,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                     <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                         <CircularProgress size={24} />
                     </Box>
-                ) : users.length === 0 ? (
+                ) : conversations.length === 0 ? (
                     <Box sx={{ textAlign: "center", mt: 4 }}>
                         <Typography color="text.secondary">
                             No users found
@@ -260,9 +328,9 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                         }}
                         sx={{ overflowY: "auto", px: 1, flex: 1, minHeight: 0 }}
                     >
-                        {users.map((user, index) => (
+                        {conversations.map((user, index) => (
                             <SidebarUserItem
-                                key={user._id}
+                                key={`${user.isGroup ? "group" : "user"}-${user._id}`}
                                 user={user}
                                 index={index}
                                 onlineUsers={onlineUsers}
@@ -282,6 +350,54 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
 
 
             </Box >
+
+            <Dialog
+                open={groupDialogOpen}
+                onClose={() => setGroupDialogOpen(false)}
+                fullWidth
+                maxWidth="xs"
+            >
+                <DialogTitle>Create New Group</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label="Group Name"
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        sx={{ mt: 1, mb: 2 }}
+                    />
+
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        Select Members
+                    </Typography>
+                    <Box sx={{ maxHeight: 260, overflowY: "auto" }}>
+                        {users.map((member) => (
+                            <FormControlLabel
+                                key={member._id}
+                                control={
+                                    <Checkbox
+                                        checked={selectedMembers.includes(member._id)}
+                                        onChange={() => toggleMember(member._id)}
+                                    />
+                                }
+                                label={member.name}
+                                sx={{ display: "flex", ml: 0 }}
+                            />
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setGroupDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleCreateGroup}
+                        disabled={creatingGroup || !groupName.trim() || selectedMembers.length === 0}
+                    >
+                        {creatingGroup ? "Creating..." : "Create Group"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
         </>
     );

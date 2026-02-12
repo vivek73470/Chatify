@@ -74,6 +74,41 @@ export const offReceiveSocketMessage = () => {
   socket.off("receiveMessage");
 };
 
+export const sendGroupSocketMessage = (message) => {
+  const socket = initSocket();
+  socket.emit("sendGroupMessage", message);
+};
+
+export const onReceiveGroupMessage = (callback) => {
+  const socket = initSocket();
+  socket.on("receiveGroupMessage", callback);
+}
+
+export const offReceiveGroupMessage = () => {
+  const socket = initSocket();
+  socket.off("receiveGroupMessage");
+};
+
+export const emitGroupCreated = (memberIds) => {
+  const socket = initSocket();
+  socket.emit("groupCreated", { memberIds });
+};
+
+export const emitGroupDeleted = ({ groupId, memberIds }) => {
+  const socket = initSocket();
+  socket.emit("groupDeleted", { groupId, memberIds });
+};
+
+export const onGroupDeletedNotice = (callback) => {
+  const socket = initSocket();
+  socket.on("groupDeletedNotice", callback);
+};
+
+export const offGroupDeletedNotice = () => {
+  const socket = initSocket();
+  socket.off("groupDeletedNotice");
+};
+
 /* ---------------- READ / STATUS ---------------- */
 
 export const sendReadReceipt = ({ senderId, receiverId }) => {
@@ -176,5 +211,3 @@ export const offMessageStatusBulkUpdate = () => {
   const socket = initSocket();
   socket.off("messageStatusBulkUpdate");
 };
-
-

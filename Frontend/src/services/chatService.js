@@ -15,11 +15,36 @@ export const chatApi = createApi({
                 body: data
             }),
         }),
+        sendGroupMessage: builder.mutation({
+            query: (data) => ({
+                url: endpoints.message.sendGroupMessage,
+                method: "POST",
+                body: data,
+            }),
+        }),
         getMessage: builder.query({
             query: (id) => ({
                 url: `${endpoints.message.getMessage}/${id}`,
                 method: 'GET',
             })
+        }),
+        getGroupMessage: builder.query({
+            query: (id) => ({
+                url: `${endpoints.message.getGroupMessage}/${id}`,
+                method: "GET",
+            }),
+        }),
+        deleteConversation: builder.mutation({
+            query: (id) => ({
+                url: `${endpoints.message.deleteConversation}/${id}`,
+                method: "DELETE",
+            }),
+        }),
+        deleteGroupConversation: builder.mutation({
+            query: (id) => ({
+                url: `${endpoints.message.deleteGroupConversation}/${id}`,
+                method: "DELETE",
+            }),
         }),
         markMessageAsRead: builder.mutation({
             query: (id) => ({
@@ -44,7 +69,11 @@ export const chatApi = createApi({
 })
 export const {
     useSendMessageMutation,
+    useSendGroupMessageMutation,
     useGetMessageQuery,
+    useGetGroupMessageQuery,
+    useDeleteConversationMutation,
+    useDeleteGroupConversationMutation,
     useMarkMessageAsReadMutation,
     useUnReadMessageCountQuery
 

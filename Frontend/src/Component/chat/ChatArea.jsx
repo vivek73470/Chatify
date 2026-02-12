@@ -6,7 +6,9 @@ import {
     Avatar,
     InputAdornment,
     CircularProgress,
-    ClickAwayListener
+    ClickAwayListener,
+    Menu,
+    MenuItem
 } from "@mui/material";
 import {
     ArrowBack,
@@ -25,20 +27,29 @@ import {
     emitTypingStart, emitTypingStop, onTypingStart, onTypingStop,
     onReceiveMessage, sendReadReceipt, sendSocketMessage, offTypingStart,
     offTypingStop, onMessageReadUpdate, onMessageStatusUpdate, offReceiveSocketMessage, offMessageReadUpdate, offMessageStatusUpdate,
-    openChat, closeChat, onMessageStatusBulkUpdate, offMessageStatusBulkUpdate
+    openChat, closeChat, onMessageStatusBulkUpdate, offMessageStatusBulkUpdate,
+    sendGroupSocketMessage, onReceiveGroupMessage, offReceiveGroupMessage,
+    emitGroupDeleted, onGroupDeletedNotice, offGroupDeletedNotice
 } from "../../socket/socket";
-import { useGetMessageQuery, useMarkMessageAsReadMutation, useSendMessageMutation } from "../../services/chatService";
+import { useDeleteConversationMutation, useDeleteGroupConversationMutation, useGetGroupMessageQuery, useGetMessageQuery, useMarkMessageAsReadMutation, useSendGroupMessageMutation, useSendMessageMutation } from "../../services/chatService";
 import MessageTick from "../MessageTick/MessageTick";
 import { useRef } from "react";
+import { useDeleteGroupMutation, userApi } from "../../services/userService";
+import { useDispatch } from "react-redux";
+import { useConfirmDialog } from "../Common/ConfirmDialogProvider";
 
 
 const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const [showEmoji, setShowEmoji] = useState(false);
+    const [menuAnchor, setMenuAnchor] = useState(null);
 
     const loggedInUser = JSON.parse(localStorage.getItem('user'))
-    const isUserOnline = onlineUsers.includes(user?._id)
+    const isGroupChat = Boolean(user?.isGroup);
+    const isUserOnline = !isGroupChat && onlineUsers.includes(user?._id)
+    const dispatch = useDispatch();
+    const { confirm } = useConfirmDialog();
 
     const [isOtherTyping, setIsOtherTyping] = useState(false);
     const typingTimeoutRef = useRef(null);
@@ -46,20 +57,32 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
 
     const [sendMessageApi] = useSendMessageMutation();
+    const [sendGroupMessageApi] = useSendGroupMessageMutation();
+    const [deleteConversationApi] = useDeleteConversationMutation();
+    const [deleteGroupConversationApi] = useDeleteGroupConversationMutation();
+    const [deleteGroupApi] = useDeleteGroupMutation();
     const [markAsReadApi] = useMarkMessageAsReadMutation();
-    const { data, isLoading } = useGetMessageQuery(
+    const { data: directData, isLoading: isDirectLoading } = useGetMessageQuery(
         user?._id,
-        { skip: !user, refetchOnMountOrArgChange: true }
+        { skip: !user || isGroupChat, refetchOnMountOrArgChange: true }
     );
+    const { data: groupData, isLoading: isGroupLoading } = useGetGroupMessageQuery(
+        user?._id,
+        { skip: !user || !isGroupChat, refetchOnMountOrArgChange: true }
+    );
+    const isLoading = isGroupChat ? isGroupLoading : isDirectLoading;
 
     useEffect(() => {
-        if (data?.data) {
-            setMessages(data.data);
+        const payload = isGroupChat ? groupData?.data : directData?.data;
+        if (payload) {
+            setMessages(payload);
         }
-    }, [data]);
+    }, [directData, groupData, isGroupChat]);
 
     // RECEIVE MESSAGE & AUTO-MARK AS READ
     useEffect(() => {
+        if (!user || isGroupChat) return;
+
         onReceiveMessage((message) => {
             const isCurrentChat =
                 message.sender === user?._id ||
@@ -81,13 +104,40 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         return () => {
             offReceiveSocketMessage();
         };
-    }, [user?._id]);
+    }, [user?._id, isGroupChat, loggedInUser?._id, markAsReadApi]);
+
+    useEffect(() => {
+        if (!user || !isGroupChat) return;
+
+        onReceiveGroupMessage((message) => {
+            if (message.group !== user._id) return;
+            setMessages((prev) => [...prev, message]);
+        });
+
+        return () => {
+            offReceiveGroupMessage();
+        };
+    }, [user?._id, isGroupChat]);
+
+    useEffect(() => {
+        onGroupDeletedNotice(({ groupId }) => {
+            if (!isGroupChat) return;
+            if (String(groupId) !== String(user?._id)) return;
+            setMessages([]);
+            setText("");
+            onBack?.();
+        });
+
+        return () => {
+            offGroupDeletedNotice();
+        };
+    }, [isGroupChat, user?._id, onBack]);
 
 
 
     // Mark messages as READ when opening chat
     useEffect(() => {
-        if (!user) return;
+        if (!user || isGroupChat) return;
         const markRead = async () => {
             await markAsReadApi(user?._id);
             sendReadReceipt({
@@ -96,10 +146,10 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             });
         };
         markRead();
-    }, [user]);
+    }, [user, isGroupChat, markAsReadApi, loggedInUser?._id]);
 
     useEffect(() => {
-        if (!user?._id || !loggedInUser?._id) return;
+        if (!user?._id || !loggedInUser?._id || isGroupChat) return;
 
         openChat({
             userId: loggedInUser._id,
@@ -109,25 +159,31 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         return () => {
             closeChat();
         };
-    }, [user?._id, loggedInUser?._id]);
+    }, [user?._id, loggedInUser?._id, isGroupChat]);
 
     const handleSend = async () => {
         if (!text.trim()) return;
-        emitTypingStop({
-            senderId: loggedInUser._id,
-            receiverId: user._id,
-        });
+        if (!isGroupChat) {
+            emitTypingStop({
+                senderId: loggedInUser._id,
+                receiverId: user._id,
+            });
+        }
         isTypingRef.current = false;
         try {
-            const res = await sendMessageApi({
-                receiverId: user?._id,
-                text
-            });
+            const res = isGroupChat
+                ? await sendGroupMessageApi({ groupId: user?._id, text })
+                : await sendMessageApi({ receiverId: user?._id, text });
+
             const newMessage = res?.data?.data;
             if (!newMessage?._id) return;
             setMessages((prev) => [...prev, newMessage]);
             // Emit after local insert so status updates can patch this message reliably.
-            sendSocketMessage(newMessage);
+            if (isGroupChat) {
+                sendGroupSocketMessage(newMessage);
+            } else {
+                sendSocketMessage(newMessage);
+            }
             setText("");
 
         } catch (err) {
@@ -135,7 +191,59 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         }
     }
 
+    const handleMenuOpen = (event) => {
+        setMenuAnchor(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setMenuAnchor(null);
+    };
+
+    const handleDeleteCurrentChat = async () => {
+        if (!user?._id) return;
+        const isGroupCreator = isGroupChat && String(user?.createdBy) === String(loggedInUser?._id);
+
+        const confirmMessage = isGroupChat
+            ? (isGroupCreator ? "Delete this group for all members?" : "Delete this group chat for you?")
+            : "Delete this chat for you?";
+        const ok = await confirm({
+            title: isGroupChat ? "Confirm Delete" : "Delete Chat",
+            message: confirmMessage,
+            confirmText: "OK",
+            cancelText: "Cancel",
+            confirmColor: "error",
+        });
+        if (!ok) return;
+
+        try {
+            if (isGroupChat) {
+                if (isGroupCreator) {
+                    await deleteGroupApi(user._id).unwrap();
+                    emitGroupDeleted({
+                        groupId: user._id,
+                        memberIds: (user?.members || []).map((member) => member._id),
+                    });
+                } else {
+                    await deleteGroupConversationApi(user._id).unwrap();
+                }
+            } else {
+                await deleteConversationApi(user._id).unwrap();
+            }
+
+            dispatch(userApi.util.invalidateTags(["Users", "Groups"]));
+            setMessages([]);
+            setText("");
+            handleMenuClose();
+            onBack?.();
+        } catch (err) {
+            console.error(err);
+            handleMenuClose();
+        }
+    };
+
     useEffect(() => {
+        if (isGroupChat) return;
+
         onMessageReadUpdate(({ receiverId }) => {
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -171,12 +279,13 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             offMessageStatusUpdate();
             offMessageStatusBulkUpdate();
         };
-    }, [loggedInUser._id]);
+    }, [loggedInUser._id, isGroupChat]);
 
 
 
     const handleTyping = (e) => {
         setText(e.target.value);
+        if (isGroupChat) return;
 
         // emit typing start ONCE
         if (!isTypingRef.current) {
@@ -199,6 +308,8 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     };
 
     useEffect(() => {
+        if (isGroupChat) return;
+
         onTypingStart(({ from }) => {
             if (from === user?._id) {
                 setIsOtherTyping(true);
@@ -215,13 +326,13 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             offTypingStart();
             offTypingStop();
         };
-    }, [user?._id]);
+    }, [user?._id, isGroupChat]);
 
 
 
     const typingPlaceholder = isOtherTyping
         ? `${user.name} typing...`
-        : "Type a message...";
+        : isGroupChat ? "Message group..." : "Type a message...";
 
     const handleEmojiClick = (emojiData) => {
         setText((prev) => prev + emojiData.emoji)
@@ -295,7 +406,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                 <Box sx={{ flex: 1 }}>
                     <Typography sx={{ color: '#000' }} fontWeight={600} fontSize="1rem">{user.name}</Typography>
                     <Typography variant="caption" color="text.secondary" fontSize="0.8rem">
-                        {isUserOnline ? 'Online' : 'Offline'}
+                        {isGroupChat ? `${user?.members?.length || 0} members` : (isUserOnline ? 'Online' : 'Offline')}
                     </Typography>
                 </Box>
                 <IconButton>
@@ -304,9 +415,20 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                 <IconButton>
                     <VideoCall />
                 </IconButton>
-                <IconButton>
+                <IconButton onClick={handleMenuOpen}>
                     <MoreVert />
                 </IconButton>
+                <Menu
+                    anchorEl={menuAnchor}
+                    open={Boolean(menuAnchor)}
+                    onClose={handleMenuClose}
+                >
+                    <MenuItem onClick={handleDeleteCurrentChat}>
+                        {isGroupChat
+                            ? (String(user?.createdBy) === String(loggedInUser?._id) ? "Delete Group" : "Delete Group Chat")
+                            : "Delete Chat"}
+                    </MenuItem>
+                </Menu>
             </Box>
 
             <Box
@@ -329,6 +451,11 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                     <>
                         {messages?.map((message) => {
                             const isMe = message.sender === loggedInUser._id;
+                            const senderName = isGroupChat
+                                ? (message.sender === loggedInUser._id
+                                    ? "You"
+                                    : (user?.members?.find((member) => String(member._id) === String(message.sender))?.name || "Member"))
+                                : "";
                             return (
                                 <Box
                                     key={message._id}
@@ -368,6 +495,14 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                                                     wordBreak: 'break-word',
                                                 }}
                                             >
+                                                {isGroupChat && !isMe && (
+                                                    <Typography
+                                                        component="span"
+                                                        sx={{ display: "block", color: "#1976d2", fontWeight: 600, fontSize: "0.72rem", mb: 0.2 }}
+                                                    >
+                                                        {senderName}
+                                                    </Typography>
+                                                )}
                                                 {message.text}
                                             </Typography>
 
@@ -391,7 +526,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                                                 </Typography>
 
                                                 <MessageTick
-                                                    isMe={isMe}
+                                                    isMe={isMe && !isGroupChat}
                                                     status={message.status}
                                                 />
                                             </Box>

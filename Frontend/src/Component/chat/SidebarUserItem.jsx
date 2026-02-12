@@ -3,7 +3,8 @@ import {
     Avatar,
     Typography,
     ListItemButton,
-    Badge
+    Badge,
+    Chip
 } from "@mui/material";
 import { useUnReadMessageCountQuery } from "../../services/chatService";
 import { getInitials, formatTime } from "../../Utils/common";
@@ -14,15 +15,18 @@ const getAvatarColor = (index) => {
 };
 
 const SidebarUserItem = ({ user, index, onlineUsers, onSelectUser }) => {
-    const { data: unreadData } = useUnReadMessageCountQuery(user._id);
+    const { data: unreadData } = useUnReadMessageCountQuery(user._id, { skip: user?.isGroup });
     const unreadCount = unreadData?.count || 0;
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     const isLastByMe = user?.lastMessageSender === loggedInUser?._id;
+    const groupSenderPrefix = user?.isGroup && user?.lastMessageSenderName
+        ? `${isLastByMe ? "You" : user.lastMessageSenderName}: `
+        : "";
     const lastMessagePreview = user?.lastMessageText
-        ? `${isLastByMe ? "You: " : ""}${user.lastMessageText}`
+        ? `${user?.isGroup ? groupSenderPrefix : (isLastByMe ? "You: " : "")}${user.lastMessageText}`
         : "No messages yet";
 
-    const isOnline = onlineUsers.includes(user._id);
+    const isOnline = !user?.isGroup && onlineUsers.includes(user._id);
 
     return (
         <ListItemButton
@@ -98,7 +102,11 @@ const SidebarUserItem = ({ user, index, onlineUsers, onSelectUser }) => {
                         {lastMessagePreview}
                     </Typography>
 
-                    {unreadCount > 0 && (
+                    {user?.isGroup && (
+                        <Chip label="Group" size="small" sx={{ height: 20, fontSize: "0.65rem" }} />
+                    )}
+
+                    {!user?.isGroup && unreadCount > 0 && (
                         <Box
                             sx={{
                                 bgcolor: "#2196F3",

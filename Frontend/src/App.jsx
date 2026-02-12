@@ -6,14 +6,17 @@ import 'react-toastify/dist/ReactToastify.css';
 import {
   Box,
 } from '@mui/material';
+import { ConfirmDialogProvider } from './Component/Common/ConfirmDialogProvider';
 
 function App() {
   return (
     <>
       <ToastContainer/>
-      <Box className='app'>
-      <AllRoutes />
-      </Box>
+      <ConfirmDialogProvider>
+        <Box className='app'>
+          <AllRoutes />
+        </Box>
+      </ConfirmDialogProvider>
 
     </>
   )
