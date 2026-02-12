@@ -53,7 +53,8 @@ export const onOnlineUsers = (callback) => {
 };
 
 export const offOnlineUsers = () => {
-  socket?.off("getOnlineUsers");
+  const socket = initSocket();
+  socket.off("getOnlineUsers");
 }
 
 /* ---------------- MESSAGES ---------------- */
@@ -64,11 +65,13 @@ export const sendSocketMessage = (message) => {
 };
 
 export const onReceiveMessage = (callback) => {
-  socket?.on("receiveMessage", callback);
+  const socket = initSocket();
+  socket.on("receiveMessage", callback);
 }
 
 export const offReceiveSocketMessage = () => {
-  socket?.off("receiveMessage");
+  const socket = initSocket();
+  socket.off("receiveMessage");
 };
 
 /* ---------------- READ / STATUS ---------------- */
@@ -80,19 +83,23 @@ export const sendReadReceipt = ({ senderId, receiverId }) => {
 }
 
 export const onMessageStatusUpdate = (callback) => {
-  socket?.on("messageStatusUpdate", callback);
+  const socket = initSocket();
+  socket.on("messageStatusUpdate", callback);
 };
 
 export const offMessageStatusUpdate = () => {
-  socket?.off("messageStatusUpdate");
+  const socket = initSocket();
+  socket.off("messageStatusUpdate");
 };
 
 export const onMessageReadUpdate = (callback) => {
-  socket?.on("messageReadUpdate", callback);
+  const socket = initSocket();
+  socket.on("messageReadUpdate", callback);
 };
 
 export const offMessageReadUpdate = () => {
-  socket?.off("messageReadUpdate");
+  const socket = initSocket();
+  socket.off("messageReadUpdate");
 };
 
 /* ---------------- SIDEBAR / COUNTS ---------------- */
@@ -103,7 +110,8 @@ export const onUnreadCountMessage = (callback) => {
 };
 
 export const offUnreadCountMessage = () => {
-  socket?.off("unreadCountChanged");
+  const socket = initSocket();
+  socket.off("unreadCountChanged");
 };
 
 export const onSidebarUpdated = (callback) => {
@@ -112,29 +120,35 @@ export const onSidebarUpdated = (callback) => {
 }
 
 export const offSidebarUpdated = () => {
-  socket?.off("sidebarUpdated");
+  const socket = initSocket();
+  socket.off("sidebarUpdated");
 };
 
 // typing emitters
 export const emitTypingStart = ({ senderId, receiverId }) => {
-  socket?.emit("typingStart", { senderId, receiverId });
+  const socket = initSocket();
+  socket.emit("typingStart", { senderId, receiverId });
 };
 
 export const emitTypingStop = ({ senderId, receiverId }) => {
-  socket?.emit("typingStop", { senderId, receiverId });
+  const socket = initSocket();
+  socket.emit("typingStop", { senderId, receiverId });
 };
 
 // typing listeners
 export const onTypingStart = (callback) => {
-  socket?.on("typingStart", callback);
+  const socket = initSocket();
+  socket.on("typingStart", callback);
 };
 
 export const offTypingStart = () => {
-  socket?.off("typingStart");
+  const socket = initSocket();
+  socket.off("typingStart");
 };
 
 export const onTypingStop = (callback) => {
-  socket?.on("typingStop", callback);
+  const socket = initSocket();
+  socket.on("typingStop", callback);
 };
 
 export const offTypingStop = () => {
@@ -148,7 +162,8 @@ export const openChat = ({ userId, withUserId }) => {
 };
 
 export const closeChat = () => {
-  socket?.emit("closeChat");
+  const socket = initSocket();
+  socket.emit("closeChat");
 };
 
 /* ---------------- BULK STATUS ---------------- */
@@ -158,7 +173,8 @@ export const onMessageStatusBulkUpdate = (callback) => {
 };
 
 export const offMessageStatusBulkUpdate = () => {
-  socket?.off("messageStatusBulkUpdate");
+  const socket = initSocket();
+  socket.off("messageStatusBulkUpdate");
 };
 
 
