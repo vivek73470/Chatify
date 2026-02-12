@@ -22,6 +22,7 @@ export default function registerUserHandlers(io, socket, onlineUsers, activeChat
     try {
       const pendingMessages = await Message.find({
         receiver: normalizedUserId,
+        group: null,
         status: "sent",
       }).select("_id sender");
 
@@ -30,7 +31,7 @@ export default function registerUserHandlers(io, socket, onlineUsers, activeChat
       }
 
       await Message.updateMany(
-        { receiver: normalizedUserId, status: "sent" },
+        { receiver: normalizedUserId, group: null, status: "sent" },
         { $set: { status: "delivered" } }
       );
 

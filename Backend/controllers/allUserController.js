@@ -36,14 +36,18 @@ const getAllUsers = async (req, res) => {
                   $or: [
                     {
                       $and: [
+                        { $eq: ["$group", null] },
                         { $eq: ["$sender", "$$otherUserId"] },
                         { $eq: ["$receiver", loggedInUserId] },
+                        { $not: [{ $in: [loggedInUserId, "$deletedFor"] }] },
                       ],
                     },
                     {
                       $and: [
+                        { $eq: ["$group", null] },
                         { $eq: ["$sender", loggedInUserId] },
                         { $eq: ["$receiver", "$$otherUserId"] },
+                        { $not: [{ $in: [loggedInUserId, "$deletedFor"] }] },
                       ],
                     },
                   ],

@@ -1,4 +1,5 @@
 import Message from "../model/MessageModel/messageModel.js";
+import Group from "../model/GroupModel/groupModel.js";
 
 const asId = (value) => String(value);
 
@@ -15,7 +16,7 @@ export default function messageHandlers(io, socket, onlineUsers, activeChats) {
   });
 
   socket.on("sendMessage", async (message) => {
-    if (!message?._id || !message?.sender || !message?.receiver) return;
+    if (!message?._id || !message?.sender || !message?.receiver || message?.group) return;
     const senderId = asId(message.sender);
     const receiverId = asId(message.receiver);
     const messageId = asId(message._id);
@@ -78,6 +79,61 @@ export default function messageHandlers(io, socket, onlineUsers, activeChats) {
     } catch (error) {
       console.error("Failed to process message status update:", error.message);
     }
+  });
+
+  socket.on("sendGroupMessage", async (message) => {
+    if (!message?._id || !message?.sender || !message?.group) return;
+
+    try {
+      const senderId = asId(message.sender);
+      const groupId = asId(message.group);
+
+      const group = await Group.findById(groupId).select("members");
+      if (!group) return;
+
+      const memberIds = group.members.map((id) => asId(id));
+
+      memberIds.forEach((memberId) => {
+        const memberSockets = onlineUsers.get(memberId);
+        if (!memberSockets) return;
+
+        memberSockets.forEach((sid) => {
+          if (memberId !== senderId) {
+            io.to(sid).emit("receiveGroupMessage", message);
+          }
+          io.to(sid).emit("sidebarUpdated");
+        });
+      });
+    } catch (error) {
+      console.error("Failed to process group message:", error.message);
+    }
+  });
+
+  socket.on("groupCreated", ({ memberIds }) => {
+    if (!Array.isArray(memberIds)) return;
+
+    memberIds.forEach((memberId) => {
+      const sockets = onlineUsers.get(asId(memberId));
+      if (!sockets) return;
+
+      sockets.forEach((sid) => {
+        io.to(sid).emit("sidebarUpdated");
+      });
+    });
+  });
+
+  socket.on("groupDeleted", ({ groupId, memberIds }) => {
+    if (!groupId || !Array.isArray(memberIds)) return;
+
+    memberIds.forEach((memberId) => {
+      const sockets = onlineUsers.get(asId(memberId));
+      if (!sockets) return;
+
+      sockets.forEach((sid) => {
+        io.to(sid).emit("sidebarUpdated");
+        io.to(sid).emit("groupDeletedNotice", { groupId: asId(groupId) });
+      });
+    });
   });
 
   socket.on("messageRead", async ({ senderId, receiverId }) => {

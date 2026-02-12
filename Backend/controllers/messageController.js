@@ -1,4 +1,5 @@
 const messageService = require('../services/messageService');
+const Group = require("../model/GroupModel/groupModel");
 
 const sendMessage = async (req, res) => {
     try {
@@ -14,6 +15,7 @@ const sendMessage = async (req, res) => {
         const savedMessage = await messageService.createMessage({
             sender: req.user._id,
             receiver: receiverId,
+            group: null,
             text,
             status: "sent"
         });
@@ -34,6 +36,8 @@ const getMessage = async (req, res) => {
         const otherUserId = req.params.id;
 
         const messagesData = await messageService.find({
+            group: null,
+            deletedFor: { $ne: loggedInUserId },
             $or: [
                 { sender: loggedInUserId, receiver: otherUserId },
                 { sender: otherUserId, receiver: loggedInUserId },
@@ -60,6 +64,8 @@ const markMessageAsRead = async (req, res) => {
             {
                 sender: otherUserId,
                 receiver: loggedInUserId,
+                group: null,
+                deletedFor: { $ne: loggedInUserId },
                 status: { $ne: "read" },
             },
             { $set: { status: "read" } }
@@ -80,6 +86,8 @@ const markMessageAsDelivered = async (req, res) => {
             {
                 sender: otherUserId,
                 receiver: loggedInUserId,
+                group: null,
+                deletedFor: { $ne: loggedInUserId },
                 status: "sent",
             },
             { $set: { status: "delivered" } }
@@ -97,6 +105,8 @@ const getUnreadMessageCount = async (req, res) => {
         const count = await messageService.count({
             sender: otherUserId,
             receiver: loggedInUserId,
+            group: null,
+            deletedFor: { $ne: loggedInUserId },
             status: { $ne: "read" }
         })
         res.status(200).json({
@@ -112,9 +122,126 @@ const getUnreadMessageCount = async (req, res) => {
     }
 }
 
+const sendGroupMessage = async (req, res) => {
+    try {
+        const { groupId, text } = req.body;
+
+        if (!groupId || !text?.trim()) {
+            return res.status(400).json({
+                status: false,
+                message: "groupId and text are required",
+            });
+        }
+
+        const group = await Group.findById(groupId).select("members");
+        if (!group) {
+            return res.status(404).json({ status: false, message: "Group not found" });
+        }
+
+        const isMember = group.members.some((memberId) => String(memberId) === String(req.user._id));
+        if (!isMember) {
+            return res.status(403).json({ status: false, message: "You are not a group member" });
+        }
+
+        const savedMessage = await messageService.createMessage({
+            sender: req.user._id,
+            receiver: null,
+            group: groupId,
+            text: text.trim(),
+            status: "delivered",
+        });
+
+        return res.status(201).json({
+            status: true,
+            data: savedMessage,
+        });
+    } catch (err) {
+        return res.status(500).json({ status: false, message: err.message });
+    }
+}
+
+const getGroupMessages = async (req, res) => {
+    try {
+        const groupId = req.params.id;
+        const group = await Group.findById(groupId).select("members");
+
+        if (!group) {
+            return res.status(404).json({ status: false, message: "Group not found" });
+        }
+
+        const isMember = group.members.some((memberId) => String(memberId) === String(req.user._id));
+        if (!isMember) {
+            return res.status(403).json({ status: false, message: "You are not a group member" });
+        }
+
+        const messagesData = await messageService.find({ group: groupId }).sort({ createdAt: 1 });
+        const visibleMessages = messagesData.filter(
+            (message) => !(message.deletedFor || []).some((userId) => String(userId) === String(req.user._id))
+        );
+
+        return res.status(200).json({
+            status: true,
+            data: visibleMessages,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            status: false,
+            message: err.message,
+        });
+    }
+}
+
+const deleteConversation = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const otherUserId = req.params.id;
+
+        await messageService.UpdateMany(
+            {
+                group: null,
+                $or: [
+                    { sender: loggedInUserId, receiver: otherUserId },
+                    { sender: otherUserId, receiver: loggedInUserId },
+                ],
+            },
+            { $addToSet: { deletedFor: loggedInUserId } }
+        );
+
+        return res.status(200).json({
+            status: true,
+            message: "Chat deleted successfully",
+        });
+    } catch (err) {
+        return res.status(500).json({ status: false, message: err.message });
+    }
+}
+
+const deleteGroupConversation = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const groupId = req.params.id;
+
+        await messageService.UpdateMany(
+            { group: groupId },
+            { $addToSet: { deletedFor: loggedInUserId } }
+        );
+
+        return res.status(200).json({
+            status: true,
+            message: "Group chat deleted successfully",
+        });
+    } catch (err) {
+        return res.status(500).json({ status: false, message: err.message });
+    }
+}
+
 module.exports = {
     sendMessage,
+    sendGroupMessage,
     getMessage,
+    getGroupMessages,
+    deleteConversation,
+    deleteGroupConversation,
     markMessageAsRead,
     markMessageAsDelivered,
     getUnreadMessageCount
