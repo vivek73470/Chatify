@@ -268,6 +268,9 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                 display: "flex",
                 flexDirection: "column",
                 bgcolor: "#f0f2f5",
+                height: "100%",
+                minHeight: 0,
+                overflow: "hidden",
             }}
         >
             <Box
@@ -311,6 +314,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                     flex: 1,
                     p: 3,
                     overflowY: "auto",
+                    minHeight: 0,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 2,

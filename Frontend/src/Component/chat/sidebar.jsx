@@ -118,7 +118,8 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                     display: "flex",
                     flexDirection: "column",
                     width: "360px",
-                    height: "100vh",
+                    height: "100%",
+                    minHeight: 0,
                     scrollbarGutter: "stable",
                     "@media (max-width:900px)": {
                         width: "100%",
@@ -257,7 +258,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                 setPage((prev) => prev + 1);
                             }
                         }}
-                        sx={{ overflowY: "auto", px: 1, flex: 1 }}
+                        sx={{ overflowY: "auto", px: 1, flex: 1, minHeight: 0 }}
                     >
                         {users.map((user, index) => (
                             <SidebarUserItem

@@ -9,13 +9,21 @@ const ChatLayout = ({ onlineUsers }) => {
   const [selectedUser, setSelectedUser] = useState(null);
 
   return (
-    <Box sx={{ display: "flex", width: '100%' }}>
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        height: "100dvh",
+        overflow: "hidden",
+      }}
+    >
       {isMobile ? (
         <Drawer open={!selectedUser} variant="temporary"
           ModalProps={{ keepMounted: true }}
           sx={{
             '& .MuiDrawer-paper': {
               width: '100%',
+              height: "100dvh",
             },
           }}
         >
