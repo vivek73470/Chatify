@@ -16,6 +16,7 @@ export const endpoints = {
     getGroupMessage: 'message/group',
     deleteConversation: 'message/conversation',
     deleteGroupConversation: 'message/group-chat',
+    editMessage: 'message/edit',
     markMessageRead: 'message/read',
     unReadMessageCount: 'message/unread-count',
   },

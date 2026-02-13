@@ -29,9 +29,10 @@ import {
     offTypingStop, onMessageReadUpdate, onMessageStatusUpdate, offReceiveSocketMessage, offMessageReadUpdate, offMessageStatusUpdate,
     openChat, closeChat, onMessageStatusBulkUpdate, offMessageStatusBulkUpdate,
     sendGroupSocketMessage, onReceiveGroupMessage, offReceiveGroupMessage,
-    emitGroupDeleted, onGroupDeletedNotice, offGroupDeletedNotice
+    emitGroupDeleted, onGroupDeletedNotice, offGroupDeletedNotice,
+    emitMessageEdited, emitGroupMessageEdited, onMessageEdited, offMessageEdited, onGroupMessageEdited, offGroupMessageEdited
 } from "../../socket/socket";
-import { useDeleteConversationMutation, useDeleteGroupConversationMutation, useGetGroupMessageQuery, useGetMessageQuery, useMarkMessageAsReadMutation, useSendGroupMessageMutation, useSendMessageMutation } from "../../services/chatService";
+import { useDeleteConversationMutation, useDeleteGroupConversationMutation, useEditMessageMutation, useGetGroupMessageQuery, useGetMessageQuery, useMarkMessageAsReadMutation, useSendGroupMessageMutation, useSendMessageMutation } from "../../services/chatService";
 import MessageTick from "../MessageTick/MessageTick";
 import { useRef } from "react";
 import { useDeleteGroupMutation, userApi } from "../../services/userService";
@@ -44,6 +45,9 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const [text, setText] = useState('');
     const [showEmoji, setShowEmoji] = useState(false);
     const [menuAnchor, setMenuAnchor] = useState(null);
+    const [messageMenuAnchor, setMessageMenuAnchor] = useState(null);
+    const [selectedMessage, setSelectedMessage] = useState(null);
+    const [editingMessageId, setEditingMessageId] = useState(null);
 
     const loggedInUser = JSON.parse(localStorage.getItem('user'))
     const isGroupChat = Boolean(user?.isGroup);
@@ -60,6 +64,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
     const [sendGroupMessageApi] = useSendGroupMessageMutation();
     const [deleteConversationApi] = useDeleteConversationMutation();
     const [deleteGroupConversationApi] = useDeleteGroupConversationMutation();
+    const [editMessageApi] = useEditMessageMutation();
     const [deleteGroupApi] = useDeleteGroupMutation();
     const [markAsReadApi] = useMarkMessageAsReadMutation();
     const { data: directData, isLoading: isDirectLoading } = useGetMessageQuery(
@@ -78,6 +83,23 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
             setMessages(payload);
         }
     }, [directData, groupData, isGroupChat]);
+
+    useEffect(() => {
+        setEditingMessageId(null);
+        setMessageMenuAnchor(null);
+        setSelectedMessage(null);
+    }, [user?._id]);
+
+    const applyEditedMessage = (updatedMessage) => {
+        if (!updatedMessage?._id) return;
+        setMessages((prev) =>
+            prev.map((msg) =>
+                msg._id === updatedMessage._id
+                    ? { ...msg, ...updatedMessage, isEdited: true }
+                    : msg
+            )
+        );
+    };
 
     // RECEIVE MESSAGE & AUTO-MARK AS READ
     useEffect(() => {
@@ -116,6 +138,35 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
         return () => {
             offReceiveGroupMessage();
+        };
+    }, [user?._id, isGroupChat]);
+
+    useEffect(() => {
+        if (!user || isGroupChat) return;
+
+        onMessageEdited((updatedMessage) => {
+            const isCurrentChat =
+                String(updatedMessage.sender) === String(user?._id) ||
+                String(updatedMessage.receiver) === String(user?._id);
+            if (!isCurrentChat) return;
+            applyEditedMessage(updatedMessage);
+        });
+
+        return () => {
+            offMessageEdited();
+        };
+    }, [user?._id, isGroupChat]);
+
+    useEffect(() => {
+        if (!user || !isGroupChat) return;
+
+        onGroupMessageEdited((updatedMessage) => {
+            if (String(updatedMessage.group) !== String(user._id)) return;
+            applyEditedMessage(updatedMessage);
+        });
+
+        return () => {
+            offGroupMessageEdited();
         };
     }, [user?._id, isGroupChat]);
 
@@ -171,6 +222,25 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
         }
         isTypingRef.current = false;
         try {
+            if (editingMessageId) {
+                const updatedMessage = await editMessageApi({
+                    messageId: editingMessageId,
+                    text: text.trim(),
+                }).unwrap();
+
+                applyEditedMessage(updatedMessage?.data || updatedMessage);
+
+                if (isGroupChat) {
+                    emitGroupMessageEdited(updatedMessage?.data || updatedMessage);
+                } else {
+                    emitMessageEdited(updatedMessage?.data || updatedMessage);
+                }
+
+                setEditingMessageId(null);
+                setText("");
+                return;
+            }
+
             const res = isGroupChat
                 ? await sendGroupMessageApi({ groupId: user?._id, text })
                 : await sendMessageApi({ receiverId: user?._id, text });
@@ -197,6 +267,28 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
     const handleMenuClose = () => {
         setMenuAnchor(null);
+    };
+
+    const handleMessageMenuOpen = (event, message) => {
+        setMessageMenuAnchor(event.currentTarget);
+        setSelectedMessage(message);
+    };
+
+    const handleMessageMenuClose = () => {
+        setMessageMenuAnchor(null);
+        setSelectedMessage(null);
+    };
+
+    const handleStartEdit = () => {
+        if (!selectedMessage?._id) return;
+        setEditingMessageId(selectedMessage._id);
+        setText(selectedMessage.text || "");
+        handleMessageMenuClose();
+    };
+
+    const handleCancelEdit = () => {
+        setEditingMessageId(null);
+        setText("");
     };
 
     const handleDeleteCurrentChat = async () => {
@@ -285,7 +377,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
     const handleTyping = (e) => {
         setText(e.target.value);
-        if (isGroupChat) return;
+        if (isGroupChat || editingMessageId) return;
 
         // emit typing start ONCE
         if (!isTypingRef.current) {
@@ -330,7 +422,9 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
 
 
-    const typingPlaceholder = isOtherTyping
+    const typingPlaceholder = editingMessageId
+        ? "Edit your message..."
+        : isOtherTyping
         ? `${user.name} typing...`
         : isGroupChat ? "Message group..." : "Type a message...";
 
@@ -429,6 +523,13 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                             : "Delete Chat"}
                     </MenuItem>
                 </Menu>
+                <Menu
+                    anchorEl={messageMenuAnchor}
+                    open={Boolean(messageMenuAnchor)}
+                    onClose={handleMessageMenuClose}
+                >
+                    <MenuItem onClick={handleStartEdit}>Edit Message</MenuItem>
+                </Menu>
             </Box>
 
             <Box
@@ -450,9 +551,9 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                 ) : (
                     <>
                         {messages?.map((message) => {
-                            const isMe = message.sender === loggedInUser._id;
+                            const isMe = String(message.sender) === String(loggedInUser._id);
                             const senderName = isGroupChat
-                                ? (message.sender === loggedInUser._id
+                                ? (String(message.sender) === String(loggedInUser._id)
                                     ? "You"
                                     : (user?.members?.find((member) => String(member._id) === String(message.sender))?.name || "Member"))
                                 : "";
@@ -485,24 +586,41 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                                                 minWidth: '80px',
                                             }}
                                         >
+                                            {isGroupChat && !isMe && (
+                                                <Typography
+                                                    sx={{ display: "block", color: "#1976d2", fontWeight: 600, fontSize: "0.72rem", mb: 0.2 }}
+                                                >
+                                                    {senderName}
+                                                </Typography>
+                                            )}
+
+                                            {isMe && (
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(event) => handleMessageMenuOpen(event, message)}
+                                                    sx={{
+                                                        position: "absolute",
+                                                        top: 2,
+                                                        right: 2,
+                                                        width: 20,
+                                                        height: 20,
+                                                        color: "rgba(0,0,0,0.5)",
+                                                    }}
+                                                >
+                                                    <MoreVert sx={{ fontSize: 16 }} />
+                                                </IconButton>
+                                            )}
+
                                             <Typography
                                                 fontSize="0.94rem"
                                                 sx={{
-                                                    pr: isMe ? 7 : 0,
+                                                    pr: isMe ? 3 : 0,
                                                     pb: 0.5,
                                                     lineHeight: 1.4,
                                                     whiteSpace: 'pre-wrap',
                                                     wordBreak: 'break-word',
                                                 }}
                                             >
-                                                {isGroupChat && !isMe && (
-                                                    <Typography
-                                                        component="span"
-                                                        sx={{ display: "block", color: "#1976d2", fontWeight: 600, fontSize: "0.72rem", mb: 0.2 }}
-                                                    >
-                                                        {senderName}
-                                                    </Typography>
-                                                )}
                                                 {message.text}
                                             </Typography>
 
@@ -522,6 +640,7 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
                                                         lineHeight: 1,
                                                     }}
                                                 >
+                                                    {message.isEdited ? "edited " : ""}
                                                     {formatMessageTime(message.createdAt)}
                                                 </Typography>
 
@@ -561,6 +680,38 @@ const ChatArea = ({ user, onBack, isMobile, onlineUsers }) => {
 
 
             <Box sx={{ p: 2, bgcolor: '#fff', borderTop: '1px solid #e0e0e0' }}>
+                {editingMessageId && (
+                    <Box
+                        sx={{
+                            mb: 1,
+                            px: 1.5,
+                            py: 0.8,
+                            borderRadius: 1.5,
+                            bgcolor: "#e3f2fd",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        <Typography sx={{ fontSize: "0.78rem", color: "#1565c0", fontWeight: 600 }}>
+                            Editing message
+                        </Typography>
+                        <Typography
+                            component="button"
+                            onClick={handleCancelEdit}
+                            sx={{
+                                border: "none",
+                                background: "transparent",
+                                color: "#1565c0",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                            }}
+                        >
+                            Cancel
+                        </Typography>
+                    </Box>
+                )}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <IconButton size="small">
                         <AttachFile />

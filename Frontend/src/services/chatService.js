@@ -46,6 +46,13 @@ export const chatApi = createApi({
                 method: "DELETE",
             }),
         }),
+        editMessage: builder.mutation({
+            query: ({ messageId, text }) => ({
+                url: `${endpoints.message.editMessage}/${messageId}`,
+                method: "PUT",
+                body: { text },
+            }),
+        }),
         markMessageAsRead: builder.mutation({
             query: (id) => ({
                 url: `${endpoints.message.markMessageRead}/${id}`,
@@ -74,6 +81,7 @@ export const {
     useGetGroupMessageQuery,
     useDeleteConversationMutation,
     useDeleteGroupConversationMutation,
+    useEditMessageMutation,
     useMarkMessageAsReadMutation,
     useUnReadMessageCountQuery
 

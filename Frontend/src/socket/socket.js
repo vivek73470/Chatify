@@ -89,6 +89,36 @@ export const offReceiveGroupMessage = () => {
   socket.off("receiveGroupMessage");
 };
 
+export const emitMessageEdited = (message) => {
+  const socket = initSocket();
+  socket.emit("messageEdited", message);
+};
+
+export const onMessageEdited = (callback) => {
+  const socket = initSocket();
+  socket.on("messageEdited", callback);
+};
+
+export const offMessageEdited = () => {
+  const socket = initSocket();
+  socket.off("messageEdited");
+};
+
+export const emitGroupMessageEdited = (message) => {
+  const socket = initSocket();
+  socket.emit("messageEdited", message);
+};
+
+export const onGroupMessageEdited = (callback) => {
+  const socket = initSocket();
+  socket.on("groupMessageEdited", callback);
+};
+
+export const offGroupMessageEdited = () => {
+  const socket = initSocket();
+  socket.off("groupMessageEdited");
+};
+
 export const emitGroupCreated = (memberIds) => {
   const socket = initSocket();
   socket.emit("groupCreated", { memberIds });
