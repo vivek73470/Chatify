@@ -33,10 +33,15 @@ const updateUserPassword = async (id, password) => {
         { new: true })
 }
 
+const deleteUserById = async (id) => {
+    return await user.findByIdAndDelete(id);
+}
+
 module.exports = {
     createUser,
     findUserById,
     findUserByPhone,
     updateUserPassword,
-    find
+    find,
+    deleteUserById
 }

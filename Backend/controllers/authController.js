@@ -159,10 +159,42 @@ const searchUser = async (req, res) => {
     }
 };
 
+const deleteUser = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        if (String(req.user?._id) !== String(id)) {
+            return res.status(403).json({
+                status: false,
+                message: "You can delete only your own account",
+            });
+        }
+
+        const deletedUser = await authService.deleteUserById(id);
+        if (!deletedUser) {
+            return res.status(404).json({
+                status: false,
+                message: "User not found",
+            });
+        }
+
+        return res.status(200).json({
+            status: true,
+            message: "Account deleted successfully",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            message: "Server error",
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
     verifyNumber,
     resetPassword,
     searchUser,
+    deleteUser,
 };
