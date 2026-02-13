@@ -19,7 +19,7 @@ import {
 import { Search, MoreVert, GroupAdd } from "@mui/icons-material";
 import { useCreateGroupMutation, useGetAllUsersQuery, useGetMyGroupsQuery, userApi } from '../../services/userService'
 import { useRef } from "react";
-import PersonOutline from "@mui/icons-material/PersonOutline";
+import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import Logout from "@mui/icons-material/Logout";
 import { useLogout } from "../../Utils/logout";
 import SidebarUserItem from "./SidebarUserItem";
@@ -27,6 +27,9 @@ import { useDispatch } from "react-redux";
 import { emitGroupCreated, offSidebarUpdated, offUnreadCountMessage, onSidebarUpdated, onUnreadCountMessage } from "../../socket/socket";
 import { chatApi } from "../../services/chatService";
 import { getInitials } from "../../Utils/common";
+import { useConfirmDialog } from "../Common/ConfirmDialogProvider";
+import { useDeleteUserMutation } from "../../services/loginService";
+import notify from "../../Utils/toastNotification";
 
 
 const Sidebar = ({ onSelectUser, onlineUsers }) => {
@@ -46,6 +49,8 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
     const menuRef = useRef();
     const buttonRef = useRef();
     const logout = useLogout();
+    const { confirm } = useConfirmDialog();
+    const [deleteUserApi] = useDeleteUserMutation();
     const [createGroup, { isLoading: creatingGroup }] = useCreateGroupMutation();
 
     const { data, isLoading, isFetching, refetch } = useGetAllUsersQuery(
@@ -157,6 +162,27 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        setOpen(false);
+
+        const ok = await confirm({
+            title: "Delete Account",
+            message: "Are you sure you want to delete your account?",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            confirmColor: "error",
+        });
+        if (!ok) return;
+
+        try {
+            await deleteUserApi(user?._id).unwrap();
+            notify.success("Account deleted successfully");
+            logout();
+        } catch (error) {
+            notify.error(error?.data?.message || "Failed to delete account");
+        }
+    };
+
 
     return (
         <>
@@ -227,10 +253,7 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                 </Box>
 
                                 <Box
-                                    onClick={() => {
-                                        setOpen(false);
-                                        console.log("Profile");
-                                    }}
+                                    onClick={handleDeleteAccount}
                                     sx={{
                                         display: "flex",
                                         alignItems: "center",
@@ -238,11 +261,12 @@ const Sidebar = ({ onSelectUser, onlineUsers }) => {
                                         px: 2,
                                         py: 0.8,
                                         cursor: "pointer",
+                                        color: "error.main",
                                         "&:hover": { bgcolor: "#f5f5f5" },
                                     }}
                                 >
-                                    <PersonOutline fontSize="small" />
-                                    <Typography fontSize={14}>Profile</Typography>
+                                    <DeleteOutline fontSize="small" />
+                                    <Typography fontSize={14}>Delete</Typography>
                                 </Box>
 
                                 <Box

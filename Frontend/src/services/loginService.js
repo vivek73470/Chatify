@@ -35,6 +35,12 @@ export const AuthApi = createApi({
                 body: { password },
             }),
         }),
+        deleteUser: builder.mutation({
+            query: (id) => ({
+                url: `${endpoints.deleteUser}/${id}`,
+                method: 'DELETE',
+            }),
+        }),
     })
 })
 
@@ -42,5 +48,6 @@ export const {
     useRegisterApiMutation,
     useLoginApiMutation,
     useVerifyNumberMutation,
-    useResetPasswordMutation
+    useResetPasswordMutation,
+    useDeleteUserMutation
 } = AuthApi
