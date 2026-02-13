@@ -109,6 +109,58 @@ export default function messageHandlers(io, socket, onlineUsers, activeChats) {
     }
   });
 
+  socket.on("messageEdited", async (message) => {
+    if (!message?._id || !message?.sender || !message?.text) return;
+
+    try {
+      const senderId = asId(message.sender);
+      const senderSockets = onlineUsers.get(senderId);
+
+      if (message.group) {
+        const groupId = asId(message.group);
+        const group = await Group.findById(groupId).select("members");
+        if (!group) return;
+
+        group.members.forEach((memberIdValue) => {
+          const memberId = asId(memberIdValue);
+          const memberSockets = onlineUsers.get(memberId);
+          if (!memberSockets) return;
+
+          memberSockets.forEach((sid) => {
+            io.to(sid).emit("groupMessageEdited", message);
+            io.to(sid).emit("sidebarUpdated");
+          });
+        });
+
+        return;
+      }
+
+      if (!message.receiver) return;
+      const receiverId = asId(message.receiver);
+      const receiverSockets = onlineUsers.get(receiverId);
+
+      if (senderSockets) {
+        senderSockets.forEach((sid) => {
+          io.to(sid).emit("messageEdited", message);
+          io.to(sid).emit("sidebarUpdated");
+        });
+      } else {
+        socket.emit("messageEdited", message);
+        socket.emit("sidebarUpdated");
+      }
+
+      if (receiverSockets) {
+        receiverSockets.forEach((sid) => {
+          io.to(sid).emit("messageEdited", message);
+          io.to(sid).emit("sidebarUpdated");
+        });
+      }
+
+    } catch (error) {
+      console.error("Failed to process message edit:", error.message);
+    }
+  });
+
   socket.on("groupCreated", ({ memberIds }) => {
     if (!Array.isArray(memberIds)) return;
 

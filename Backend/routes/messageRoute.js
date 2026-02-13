@@ -1,5 +1,5 @@
 const express = require('express');
-const {sendMessage, sendGroupMessage, getMessage, getGroupMessages, deleteConversation, deleteGroupConversation, markMessageAsRead, markMessageAsDelivered, getUnreadMessageCount} = require('../controllers/messageController');
+const {sendMessage, sendGroupMessage, getMessage, getGroupMessages, deleteConversation, deleteGroupConversation, markMessageAsRead, markMessageAsDelivered, getUnreadMessageCount, editMessage} = require('../controllers/messageController');
 const authenticate = require('../middleware/middleware');
 
 const messageRouter = express.Router();
@@ -12,6 +12,7 @@ messageRouter.delete('/conversation/:id', authenticate, deleteConversation);
 messageRouter.delete('/group-chat/:id', authenticate, deleteGroupConversation);
 messageRouter.put('/read/:id', authenticate, markMessageAsRead);
 messageRouter.put('/delivered/:id', authenticate, markMessageAsDelivered);
+messageRouter.put('/edit/:id', authenticate, editMessage);
 messageRouter.get('/unread-count/:id', authenticate, getUnreadMessageCount);
 
 module.exports = messageRouter;

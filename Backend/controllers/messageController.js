@@ -235,6 +235,48 @@ const deleteGroupConversation = async (req, res) => {
     }
 }
 
+const editMessage = async (req, res) => {
+    try {
+        const messageId = req.params.id;
+        const nextText = req.body?.text?.trim();
+
+        if (!nextText) {
+            return res.status(400).json({
+                status: false,
+                message: "text is required",
+            });
+        }
+
+        const existingMessage = await messageService.findMessageById(messageId);
+        if (!existingMessage) {
+            return res.status(404).json({
+                status: false,
+                message: "Message not found",
+            });
+        }
+
+        if (String(existingMessage.sender) !== String(req.user._id)) {
+            return res.status(403).json({
+                status: false,
+                message: "You can only edit your own messages",
+            });
+        }
+
+        const updatedMessage = await messageService.updateById(messageId, {
+            text: nextText,
+            isEdited: true,
+            editedAt: new Date(),
+        });
+
+        return res.status(200).json({
+            status: true,
+            data: updatedMessage,
+        });
+    } catch (err) {
+        return res.status(500).json({ status: false, message: err.message });
+    }
+}
+
 module.exports = {
     sendMessage,
     sendGroupMessage,
@@ -244,5 +286,6 @@ module.exports = {
     deleteGroupConversation,
     markMessageAsRead,
     markMessageAsDelivered,
-    getUnreadMessageCount
+    getUnreadMessageCount,
+    editMessage
 }
